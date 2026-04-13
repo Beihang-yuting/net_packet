@@ -5,6 +5,7 @@
 `include "tunnel/vxlan_header.sv"
 `include "tunnel/gre_header.sv"
 `include "tunnel/geneve_header.sv"
+`include "tunnel/erspan_header.sv"
 
 program test_tunnel_headers;
 
@@ -318,6 +319,85 @@ program test_tunnel_headers;
                 check("geneve: calc_fields PROTO_IPV4", gn_cf.protocol_type == ETHERTYPE_IPV4);
                 gn_cf.calc_fields('{}, PROTO_IPV6);
                 check("geneve: calc_fields PROTO_IPV6", gn_cf.protocol_type == ETHERTYPE_IPV6);
+            end
+        end
+
+        // ---- ERSPAN Type II ----
+        begin
+            erspan_ii_header e2 = new();
+
+            // proto_type, header_length, default version
+            check("erspan_ii: proto_type",     e2.proto_type == PROTO_ERSPAN_II);
+            check("erspan_ii: header_length",  e2.get_header_length() == 8);
+            check("erspan_ii: default version", e2.version == 4'd1);
+
+            // Set fields, pack, verify size
+            begin
+                erspan_ii_header e2p = erspan_ii_header::create(10'd100, 12'd200);
+                byte unsigned packed[$];
+                e2p.index = 20'h12345;
+                e2p.pack_header(packed);
+                check("erspan_ii: pack size", packed.size() == 8);
+
+                // Unpack round-trip
+                begin
+                    erspan_ii_header e2u = new();
+                    int offset = 0;
+                    e2u.unpack_header(packed, offset);
+                    check("erspan_ii: unpack version",    e2u.version == 4'd1);
+                    check("erspan_ii: unpack session_id", e2u.session_id == 10'd100);
+                    check("erspan_ii: unpack vlan",       e2u.vlan == 12'd200);
+                    check("erspan_ii: unpack index",      e2u.index == 20'h12345);
+                    check("erspan_ii: unpack offset",     offset == 8);
+                end
+
+                // Clone + compare
+                begin
+                    protocol_base e2c = e2p.clone();
+                    check("erspan_ii: clone compare", e2p.compare(e2c));
+                end
+            end
+        end
+
+        // ---- ERSPAN Type III ----
+        begin
+            erspan_iii_header e3 = new();
+
+            // proto_type, header_length, default version
+            check("erspan_iii: proto_type",      e3.proto_type == PROTO_ERSPAN_III);
+            check("erspan_iii: header_length",   e3.get_header_length() == 12);
+            check("erspan_iii: default version", e3.version == 4'd2);
+
+            // Set fields, pack, verify size
+            begin
+                erspan_iii_header e3p = erspan_iii_header::create(10'd50);
+                byte unsigned packed[$];
+                e3p.vlan      = 12'd300;
+                e3p.timestamp = 32'hDEADBEEF;
+                e3p.hw_id     = 6'd10;
+                e3p.direction = 1'b1;
+                e3p.pack_header(packed);
+                check("erspan_iii: pack size", packed.size() == 12);
+
+                // Unpack round-trip
+                begin
+                    erspan_iii_header e3u = new();
+                    int offset = 0;
+                    e3u.unpack_header(packed, offset);
+                    check("erspan_iii: unpack version",    e3u.version == 4'd2);
+                    check("erspan_iii: unpack session_id", e3u.session_id == 10'd50);
+                    check("erspan_iii: unpack vlan",       e3u.vlan == 12'd300);
+                    check("erspan_iii: unpack timestamp",  e3u.timestamp == 32'hDEADBEEF);
+                    check("erspan_iii: unpack hw_id",      e3u.hw_id == 6'd10);
+                    check("erspan_iii: unpack direction",  e3u.direction == 1'b1);
+                    check("erspan_iii: unpack offset",     offset == 12);
+                end
+
+                // Clone + compare
+                begin
+                    protocol_base e3c = e3p.clone();
+                    check("erspan_iii: clone compare", e3p.compare(e3c));
+                end
             end
         end
 
