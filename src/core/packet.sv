@@ -14,6 +14,12 @@
 `include "l4/udp_header.sv"
 `include "l4/icmp_header.sv"
 `include "l4/icmpv6_header.sv"
+`include "tunnel/vxlan_header.sv"
+`include "tunnel/gre_header.sv"
+`include "tunnel/geneve_header.sv"
+`include "tunnel/erspan_header.sv"
+`include "tunnel/gtp_header.sv"
+`include "tunnel/ip_in_ip_header.sv"
 `include "core/protocol_graph.sv"
 `include "core/template_registry.sv"
 
@@ -81,6 +87,34 @@ class packet;
             end
             PROTO_ICMPV6: begin
                 icmpv6_header h = new();
+                return h;
+            end
+            PROTO_VXLAN: begin
+                vxlan_header h = new();
+                return h;
+            end
+            PROTO_GRE: begin
+                gre_header h = new();
+                return h;
+            end
+            PROTO_GENEVE: begin
+                geneve_header h = new();
+                return h;
+            end
+            PROTO_ERSPAN_II: begin
+                erspan_ii_header h = new();
+                return h;
+            end
+            PROTO_ERSPAN_III: begin
+                erspan_iii_header h = new();
+                return h;
+            end
+            PROTO_GTP_U: begin
+                gtp_u_header h = new();
+                return h;
+            end
+            PROTO_IP_IN_IP: begin
+                ip_in_ip_header h = new();
                 return h;
             end
             default: return null;
@@ -258,6 +292,39 @@ class packet;
                     return ipv6_nh_to_proto(ip6.next_header);
                 end
             end
+            PROTO_UDP: begin
+                udp_header u;
+                if ($cast(u, hdr)) begin
+                    return udp_dstport_to_proto(u.dst_port);
+                end
+            end
+            PROTO_GRE: begin
+                gre_header g;
+                if ($cast(g, hdr)) begin
+                    return gre_proto_to_proto(g.protocol_type);
+                end
+            end
+            PROTO_VXLAN: begin
+                return PROTO_ETHERNET;
+            end
+            PROTO_GENEVE: begin
+                geneve_header gn;
+                if ($cast(gn, hdr)) begin
+                    if (gn.protocol_type == 16'h6558) return PROTO_ETHERNET;
+                    return ethertype_to_proto(gn.protocol_type);
+                end
+            end
+            PROTO_ERSPAN_II, PROTO_ERSPAN_III: begin
+                return PROTO_ETHERNET;
+            end
+            PROTO_GTP_U: begin
+                if (offset < data.size()) begin
+                    bit [3:0] ip_ver = data[offset][7:4];
+                    if (ip_ver == 4) return PROTO_IPV4;
+                    if (ip_ver == 6) return PROTO_IPV6;
+                end
+                return PROTO_RAW_PAYLOAD;
+            end
             default: return PROTO_RAW_PAYLOAD;
         endcase
         return PROTO_RAW_PAYLOAD;
@@ -314,6 +381,34 @@ class packet;
             IPV6_NH_OSPF:     return PROTO_OSPF;
             IPV6_NH_SCTP:     return PROTO_SCTP;
             default:          return PROTO_RAW_PAYLOAD;
+        endcase
+    endfunction
+
+    // =========================================================================
+    // UDP dst_port -> protocol mapping
+    // =========================================================================
+    static function protocol_type_e udp_dstport_to_proto(bit [15:0] port);
+        case (port)
+            16'd4789: return PROTO_VXLAN;
+            16'd6081: return PROTO_GENEVE;
+            16'd2152: return PROTO_GTP_U;
+            16'd2123: return PROTO_GTP_C;
+            16'd4791: return PROTO_ROCEV2;
+            default:  return PROTO_RAW_PAYLOAD;
+        endcase
+    endfunction
+
+    // =========================================================================
+    // GRE protocol_type -> protocol mapping
+    // =========================================================================
+    static function protocol_type_e gre_proto_to_proto(bit [15:0] proto);
+        case (proto)
+            ETHERTYPE_IPV4:  return PROTO_IPV4;
+            ETHERTYPE_IPV6:  return PROTO_IPV6;
+            16'h6558:        return PROTO_ETHERNET;
+            16'h88BE:        return PROTO_ERSPAN_II;
+            16'h22EB:        return PROTO_ERSPAN_III;
+            default:         return PROTO_RAW_PAYLOAD;
         endcase
     endfunction
 
