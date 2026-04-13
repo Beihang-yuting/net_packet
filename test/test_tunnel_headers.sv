@@ -6,6 +6,7 @@
 `include "tunnel/gre_header.sv"
 `include "tunnel/geneve_header.sv"
 `include "tunnel/erspan_header.sv"
+`include "tunnel/gtp_header.sv"
 
 program test_tunnel_headers;
 
@@ -398,6 +399,80 @@ program test_tunnel_headers;
                     protocol_base e3c = e3p.clone();
                     check("erspan_iii: clone compare", e3p.compare(e3c));
                 end
+            end
+        end
+
+        // ---- GTP-U ----
+        begin
+            gtp_u_header gtp = new();
+
+            // 1. proto_type, header_length (basic), default version/message_type
+            check("gtp_u: proto_type",         gtp.proto_type == PROTO_GTP_U);
+            check("gtp_u: header_length basic", gtp.get_header_length() == 8);
+            check("gtp_u: default version",    gtp.version == 3'b001);
+            check("gtp_u: default message_type", gtp.message_type == 8'hFF);
+
+            // 2. Basic pack (teid=0xAABBCCDD): size==8; unpack: teid, message_type, offset==8
+            begin
+                gtp_u_header gtp_p = new();
+                byte unsigned packed[$];
+                gtp_p.teid = 32'hAABBCCDD;
+                gtp_p.pack_header(packed);
+                check("gtp_u: basic pack size", packed.size() == 8);
+                begin
+                    gtp_u_header gtp_u = new();
+                    int offset = 0;
+                    gtp_u.unpack_header(packed, offset);
+                    check("gtp_u: basic unpack teid",         gtp_u.teid == 32'hAABBCCDD);
+                    check("gtp_u: basic unpack message_type", gtp_u.message_type == 8'hFF);
+                    check("gtp_u: basic unpack offset",       offset == 8);
+                end
+            end
+
+            // 3. With optional (s_flag=1, teid=0x12345678, seq=0x0001):
+            //    header_length==12, pack size==12, unpack s_flag/teid/seq, offset==12
+            begin
+                gtp_u_header gtp_s = new();
+                byte unsigned packed[$];
+                gtp_s.s_flag          = 1'b1;
+                gtp_s.teid            = 32'h12345678;
+                gtp_s.sequence_number = 16'h0001;
+                check("gtp_u: s_flag header_length", gtp_s.get_header_length() == 12);
+                gtp_s.pack_header(packed);
+                check("gtp_u: s_flag pack size", packed.size() == 12);
+                begin
+                    gtp_u_header gtp_s2 = new();
+                    int offset = 0;
+                    gtp_s2.unpack_header(packed, offset);
+                    check("gtp_u: s_flag unpack s_flag",  gtp_s2.s_flag == 1'b1);
+                    check("gtp_u: s_flag unpack teid",    gtp_s2.teid == 32'h12345678);
+                    check("gtp_u: s_flag unpack seq",     gtp_s2.sequence_number == 16'h0001);
+                    check("gtp_u: s_flag unpack offset",  offset == 12);
+                end
+            end
+
+            // 4. Clone + compare with optional fields
+            begin
+                gtp_u_header gtp_c = new();
+                protocol_base gtp_clone;
+                gtp_c.s_flag          = 1'b1;
+                gtp_c.teid            = 32'hDEADBEEF;
+                gtp_c.sequence_number = 16'hABCD;
+                gtp_c.n_pdu_number    = 8'h42;
+                gtp_clone = gtp_c.clone();
+                check("gtp_u: clone compare", gtp_c.compare(gtp_clone));
+                begin
+                    gtp_u_header gtp_diff = new();
+                    gtp_diff.s_flag = 1'b1;
+                    gtp_diff.teid   = 32'hCAFEBABE;
+                    check("gtp_u: compare different teid", !gtp_c.compare(gtp_diff));
+                end
+            end
+
+            // 5. Static create(0xFEDCBA98): verify teid
+            begin
+                gtp_u_header gtp_cr = gtp_u_header::create(32'hFEDCBA98);
+                check("gtp_u: create teid", gtp_cr.teid == 32'hFEDCBA98);
             end
         end
 

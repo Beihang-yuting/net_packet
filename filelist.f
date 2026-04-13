@@ -23,6 +23,7 @@ src/protocols/tunnel/vxlan_header.sv
 src/protocols/tunnel/gre_header.sv
 src/protocols/tunnel/geneve_header.sv
 src/protocols/tunnel/erspan_header.sv
+src/protocols/tunnel/gtp_header.sv
 src/core/protocol_graph.sv
 src/core/template_registry.sv
 src/core/packet.sv
