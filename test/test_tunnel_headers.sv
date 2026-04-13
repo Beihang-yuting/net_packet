@@ -4,6 +4,7 @@
 `include "protocol_base.sv"
 `include "tunnel/vxlan_header.sv"
 `include "tunnel/gre_header.sv"
+`include "tunnel/geneve_header.sv"
 
 program test_tunnel_headers;
 
@@ -222,6 +223,101 @@ program test_tunnel_headers;
                 check("gre: calc_fields Ethernet", gre_cf.protocol_type == 16'h6558);
                 gre_cf.calc_fields('{}, PROTO_ERSPAN_II);
                 check("gre: calc_fields ERSPAN_II", gre_cf.protocol_type == 16'h88BE);
+            end
+        end
+
+        // ---- Geneve ----
+        begin
+            geneve_header gn = new();
+
+            // 1. proto_type
+            check("geneve: proto_type", gn.proto_type == PROTO_GENEVE);
+
+            // 2. Basic defaults: header_length==8, vni==100, protocol_type==0x6558
+            check("geneve: header_length basic",      gn.get_header_length() == 8);
+            check("geneve: default vni",              gn.vni == 24'd100);
+            check("geneve: default protocol_type",    gn.protocol_type == 16'h6558);
+
+            // 3. Pack without options (vni=0xABCDEF), size==8
+            begin
+                geneve_header gn_p = new();
+                byte unsigned packed[$];
+                gn_p.vni = 24'hABCDEF;
+                gn_p.pack_header(packed);
+                check("geneve: pack no-opt size",  packed.size() == 8);
+                check("geneve: pack vni[0]",       packed[4] == 8'hAB);
+                check("geneve: pack vni[1]",       packed[5] == 8'hCD);
+                check("geneve: pack vni[2]",       packed[6] == 8'hEF);
+            end
+
+            // 4. Unpack: vni, protocol_type, offset==8
+            begin
+                geneve_header gn_u = new();
+                byte unsigned packed[$];
+                int offset;
+                gn_u.vni = 24'hABCDEF;
+                gn_u.pack_header(packed);
+                begin
+                    geneve_header gn_u2 = new();
+                    offset = 0;
+                    gn_u2.unpack_header(packed, offset);
+                    check("geneve: unpack vni",           gn_u2.vni == 24'hABCDEF);
+                    check("geneve: unpack protocol_type", gn_u2.protocol_type == 16'h6558);
+                    check("geneve: unpack offset",        offset == 8);
+                end
+            end
+
+            // 5. With options (4 bytes): header_length==12, pack size==12,
+            //    unpack opt_len==1, options.size()==4, options[0]==0x01, offset==12
+            begin
+                geneve_header gn_o = new();
+                byte unsigned packed[$];
+                int offset;
+                gn_o.options    = new[4];
+                gn_o.options[0] = 8'h01;
+                gn_o.options[1] = 8'h02;
+                gn_o.options[2] = 8'h03;
+                gn_o.options[3] = 8'h04;
+                gn_o.opt_len    = 6'h1;
+                check("geneve: with options header_length", gn_o.get_header_length() == 12);
+                gn_o.pack_header(packed);
+                check("geneve: with options pack size", packed.size() == 12);
+                begin
+                    geneve_header gn_o2 = new();
+                    offset = 0;
+                    gn_o2.unpack_header(packed, offset);
+                    check("geneve: with options unpack opt_len",      gn_o2.opt_len == 6'h1);
+                    check("geneve: with options unpack options.size", gn_o2.options.size() == 4);
+                    check("geneve: with options unpack options[0]",   gn_o2.options[0] == 8'h01);
+                    check("geneve: with options unpack offset",       offset == 12);
+                end
+            end
+
+            // 6. Clone + compare
+            begin
+                geneve_header gn_c = new();
+                protocol_base gn_clone;
+                gn_c.vni = 24'd999;
+                gn_clone = gn_c.clone();
+                check("geneve: clone compare", gn_c.compare(gn_clone));
+                begin
+                    geneve_header gn_diff = new();
+                    gn_diff.vni = 24'd1;
+                    check("geneve: compare different vni", !gn_c.compare(gn_diff));
+                end
+            end
+
+            // 7. calc_fields: PROTO_ETHERNET -> 0x6558
+            begin
+                geneve_header gn_cf = new();
+                gn_cf.auto_calc = 1;
+                gn_cf.protocol_type = 16'h0000;
+                gn_cf.calc_fields('{}, PROTO_ETHERNET);
+                check("geneve: calc_fields PROTO_ETHERNET", gn_cf.protocol_type == 16'h6558);
+                gn_cf.calc_fields('{}, PROTO_IPV4);
+                check("geneve: calc_fields PROTO_IPV4", gn_cf.protocol_type == ETHERTYPE_IPV4);
+                gn_cf.calc_fields('{}, PROTO_IPV6);
+                check("geneve: calc_fields PROTO_IPV6", gn_cf.protocol_type == ETHERTYPE_IPV6);
             end
         end
 
