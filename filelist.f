@@ -20,6 +20,7 @@ src/protocols/l4/udp_header.sv
 src/protocols/l4/icmp_header.sv
 src/protocols/l4/icmpv6_header.sv
 src/protocols/tunnel/vxlan_header.sv
+src/protocols/tunnel/gre_header.sv
 src/core/protocol_graph.sv
 src/core/template_registry.sv
 src/core/packet.sv
