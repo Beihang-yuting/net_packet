@@ -30,7 +30,10 @@ test_protocol_graph: test/test_protocol_graph.sv
 test_packet_builder: test/test_packet_builder.sv
 	$(MAKE) run_packet_builder
 
-test_all: test_protocol_headers test_protocol_graph test_packet_builder
+test_tunnel_headers: test/test_tunnel_headers.sv
+	$(MAKE) run_tunnel_headers
+
+test_all: test_protocol_headers test_protocol_graph test_packet_builder test_tunnel_headers
 
 clean:
 	rm -rf simv_* csrc *.log *.vpd *.fsdb work transcript *.wlf DVEfiles
