@@ -7,6 +7,7 @@
 `include "tunnel/geneve_header.sv"
 `include "tunnel/erspan_header.sv"
 `include "tunnel/gtp_header.sv"
+`include "tunnel/ip_in_ip_header.sv"
 
 program test_tunnel_headers;
 
@@ -473,6 +474,34 @@ program test_tunnel_headers;
             begin
                 gtp_u_header gtp_cr = gtp_u_header::create(32'hFEDCBA98);
                 check("gtp_u: create teid", gtp_cr.teid == 32'hFEDCBA98);
+            end
+        end
+
+        // ---- IP-in-IP ----
+        begin
+            ip_in_ip_header iip = new();
+
+            // 1. proto_type
+            check("ip_in_ip: proto_type",    iip.proto_type == PROTO_IP_IN_IP);
+
+            // 2. header_length == 0
+            check("ip_in_ip: header_length", iip.get_header_length() == 0);
+
+            // 3. pack: size == 0
+            begin
+                byte unsigned packed[$];
+                iip.pack_header(packed);
+                check("ip_in_ip: pack size", packed.size() == 0);
+            end
+
+            // 4. clone + compare
+            begin
+                protocol_base iip_clone = iip.clone();
+                check("ip_in_ip: clone compare", iip.compare(iip_clone));
+                begin
+                    ip_in_ip_header iip2 = new();
+                    check("ip_in_ip: compare same type", iip.compare(iip2));
+                end
             end
         end
 
