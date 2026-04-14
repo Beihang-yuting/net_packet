@@ -51,3 +51,6 @@ src/pcap/pcap_writer.sv
 src/pcap/pcap_reader.sv
 src/sequence/protocol_sequence.sv
 src/sequence/tcp_sequences.sv
+src/sequence/arp_sequence.sv
+src/sequence/icmp_sequence.sv
+src/sequence/ptp_sequence.sv
