@@ -6,6 +6,8 @@
 `include "l3/ipv6_ext_header.sv"
 `include "l4/sctp_header.sv"
 `include "app/ptp_header.sv"
+`include "tunnel/vxlan_gpe_header.sv"
+`include "tunnel/esp_header.sv"
 
 program test_phase2c_headers;
 
@@ -463,6 +465,126 @@ program test_phase2c_headers;
         begin
             ptp_header p = ptp_header::create(.msg_type(4'd1));
             check("ptp_create: message_type", p.message_type == 4'd1);
+        end
+
+        // ---- VXLAN-GPE: basic construction ----
+        begin
+            vxlan_gpe_header v = new();
+
+            check("vxlan_gpe_basic: proto_type",    v.proto_type == PROTO_VXLAN_GPE);
+            check("vxlan_gpe_basic: header_length", v.get_header_length() == 8);
+            check("vxlan_gpe_basic: default vni",   v.vni == 24'd100);
+            check("vxlan_gpe_basic: default flags",          v.flags == 8'h0C);
+            check("vxlan_gpe_basic: default next_protocol",  v.next_protocol == 8'd3);
+        end
+
+        // ---- VXLAN-GPE: pack ----
+        begin
+            vxlan_gpe_header v = new();
+            byte unsigned packed[$];
+
+            v.vni           = 24'hABCDEF;
+            v.next_protocol = 8'd3;
+            v.pack_header(packed);
+            check("vxlan_gpe_pack: size", packed.size() == 8);
+        end
+
+        // ---- VXLAN-GPE: unpack round-trip ----
+        begin
+            vxlan_gpe_header v = new();
+            byte unsigned packed[$];
+            int offset;
+
+            v.flags         = 8'h0C;
+            v.next_protocol = 8'd1;   // IPv4
+            v.vni           = 24'hABCDEF;
+            v.pack_header(packed);
+
+            begin
+                vxlan_gpe_header v2 = new();
+                offset = 0;
+                v2.unpack_header(packed, offset);
+                check("vxlan_gpe_unpack: flags",         v2.flags         == 8'h0C);
+                check("vxlan_gpe_unpack: next_protocol", v2.next_protocol == 8'd1);
+                check("vxlan_gpe_unpack: vni",           v2.vni           == 24'hABCDEF);
+                check("vxlan_gpe_unpack: offset",        offset           == 8);
+            end
+        end
+
+        // ---- VXLAN-GPE: calc_fields ----
+        begin
+            vxlan_gpe_header v = new();
+            byte unsigned empty[$];
+
+            v.calc_fields(empty, PROTO_IPV4);
+            check("vxlan_gpe_calc: PROTO_IPV4 -> next_protocol==1", v.next_protocol == 8'd1);
+
+            v.calc_fields(empty, PROTO_ETHERNET);
+            check("vxlan_gpe_calc: PROTO_ETHERNET -> next_protocol==3", v.next_protocol == 8'd3);
+        end
+
+        // ---- VXLAN-GPE: clone+compare ----
+        begin
+            vxlan_gpe_header v = new();
+            v.flags         = 8'h0C;
+            v.next_protocol = 8'd2;
+            v.vni           = 24'd999;
+
+            begin
+                protocol_base v2 = v.clone();
+                check("vxlan_gpe_clone: compare", v.compare(v2));
+            end
+        end
+
+        // ---- ESP: basic construction ----
+        begin
+            esp_header e = new();
+
+            check("esp_basic: proto_type",    e.proto_type == PROTO_ESP);
+            check("esp_basic: header_length", e.get_header_length() == 8);
+        end
+
+        // ---- ESP: pack ----
+        begin
+            esp_header e = new();
+            byte unsigned packed[$];
+
+            e.spi             = 32'h12345678;
+            e.sequence_number = 32'd1;
+            e.pack_header(packed);
+            check("esp_pack: size", packed.size() == 8);
+        end
+
+        // ---- ESP: unpack round-trip ----
+        begin
+            esp_header e = new();
+            byte unsigned packed[$];
+            int offset;
+
+            e.spi             = 32'h12345678;
+            e.sequence_number = 32'd1;
+            e.pack_header(packed);
+
+            begin
+                esp_header e2 = new();
+                offset = 0;
+                e2.unpack_header(packed, offset);
+                check("esp_unpack: spi",             e2.spi             == 32'h12345678);
+                check("esp_unpack: sequence_number", e2.sequence_number == 32'd1);
+                check("esp_unpack: offset",          offset             == 8);
+            end
+        end
+
+        // ---- ESP: clone+compare ----
+        begin
+            esp_header e = new();
+            e.spi             = 32'hDEADBEEF;
+            e.sequence_number = 32'd42;
+
+            begin
+                protocol_base e2 = e.clone();
+                check("esp_clone: compare", e.compare(e2));
+            end
         end
 
         $display("=== Results: %0d passed, %0d failed ===", pass_count, fail_count);

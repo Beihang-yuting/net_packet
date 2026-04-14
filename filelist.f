@@ -31,6 +31,8 @@ src/protocols/tunnel/geneve_header.sv
 src/protocols/tunnel/erspan_header.sv
 src/protocols/tunnel/gtp_header.sv
 src/protocols/tunnel/ip_in_ip_header.sv
+src/protocols/tunnel/vxlan_gpe_header.sv
+src/protocols/tunnel/esp_header.sv
 src/protocols/rdma/rocev2_header.sv
 src/protocols/rdma/iwarp_header.sv
 src/protocols/storage/nvme_tcp_header.sv
