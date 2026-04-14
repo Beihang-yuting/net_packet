@@ -24,6 +24,12 @@
 `include "rdma/iwarp_header.sv"
 `include "storage/nvme_tcp_header.sv"
 `include "storage/iscsi_header.sv"
+`include "l2/mpls_header.sv"
+`include "l3/ipv6_ext_header.sv"
+`include "l4/sctp_header.sv"
+`include "app/ptp_header.sv"
+`include "tunnel/vxlan_gpe_header.sv"
+`include "tunnel/esp_header.sv"
 `include "core/protocol_graph.sv"
 `include "core/template_registry.sv"
 
@@ -135,6 +141,42 @@ class packet;
             end
             PROTO_ISCSI: begin
                 iscsi_header h = new();
+                return h;
+            end
+            PROTO_MPLS: begin
+                mpls_header h = new();
+                return h;
+            end
+            PROTO_IPV6_HBH: begin
+                ipv6_hbh_header h = new();
+                return h;
+            end
+            PROTO_IPV6_ROUTING: begin
+                ipv6_routing_header h = new();
+                return h;
+            end
+            PROTO_IPV6_FRAGMENT: begin
+                ipv6_fragment_header h = new();
+                return h;
+            end
+            PROTO_IPV6_DEST: begin
+                ipv6_dest_header h = new();
+                return h;
+            end
+            PROTO_SCTP: begin
+                sctp_header h = new();
+                return h;
+            end
+            PROTO_PTP: begin
+                ptp_header h = new();
+                return h;
+            end
+            PROTO_VXLAN_GPE: begin
+                vxlan_gpe_header h = new();
+                return h;
+            end
+            PROTO_ESP: begin
+                esp_header h = new();
                 return h;
             end
             default: return null;
@@ -354,6 +396,58 @@ class packet;
             PROTO_ROCEV2: begin
                 return PROTO_RAW_PAYLOAD;
             end
+            PROTO_MPLS: begin
+                mpls_header m;
+                if ($cast(m, hdr)) begin
+                    if (m.s_bit == 0) return PROTO_MPLS;  // More labels
+                    // Bottom of stack: peek at next byte to determine IPv4/IPv6
+                    if (offset < data.size()) begin
+                        bit [3:0] ip_ver = data[offset][7:4];
+                        if (ip_ver == 4) return PROTO_IPV4;
+                        if (ip_ver == 6) return PROTO_IPV6;
+                    end
+                    return PROTO_ETHERNET;  // Default: assume Ethernet
+                end
+            end
+            PROTO_IPV6_HBH, PROTO_IPV6_ROUTING, PROTO_IPV6_DEST: begin
+                // These extension headers have next_header at byte[0]
+                // But we've already unpacked past them, so use the stored field
+                // The extension headers store next_header, we need to map it
+                if (hdr.proto_type == PROTO_IPV6_HBH) begin
+                    ipv6_hbh_header h;
+                    if ($cast(h, hdr)) return ipv6_nh_to_proto(h.next_header);
+                end
+                if (hdr.proto_type == PROTO_IPV6_ROUTING) begin
+                    ipv6_routing_header h;
+                    if ($cast(h, hdr)) return ipv6_nh_to_proto(h.next_header);
+                end
+                if (hdr.proto_type == PROTO_IPV6_DEST) begin
+                    ipv6_dest_header h;
+                    if ($cast(h, hdr)) return ipv6_nh_to_proto(h.next_header);
+                end
+            end
+            PROTO_IPV6_FRAGMENT: begin
+                ipv6_fragment_header h;
+                if ($cast(h, hdr)) return ipv6_nh_to_proto(h.next_header);
+            end
+            PROTO_VXLAN_GPE: begin
+                vxlan_gpe_header vg;
+                if ($cast(vg, hdr)) begin
+                    case (vg.next_protocol)
+                        8'd1: return PROTO_IPV4;
+                        8'd2: return PROTO_IPV6;
+                        8'd3: return PROTO_ETHERNET;
+                        8'd5: return PROTO_MPLS;
+                        default: return PROTO_RAW_PAYLOAD;
+                    endcase
+                end
+            end
+            PROTO_ESP: begin
+                return PROTO_RAW_PAYLOAD;  // ESP payload is encrypted
+            end
+            PROTO_PTP: begin
+                return PROTO_RAW_PAYLOAD;
+            end
             default: return PROTO_RAW_PAYLOAD;
         endcase
         return PROTO_RAW_PAYLOAD;
@@ -368,8 +462,11 @@ class packet;
             ETHERTYPE_IPV6:   return PROTO_IPV6;
             ETHERTYPE_ARP:    return PROTO_ARP;
             ETHERTYPE_VLAN:   return PROTO_VLAN;
-            ETHERTYPE_QINQ:   return PROTO_QINQ;
-            default:          return PROTO_RAW_PAYLOAD;
+            ETHERTYPE_QINQ:      return PROTO_QINQ;
+            ETHERTYPE_MPLS_UNI:  return PROTO_MPLS;
+            ETHERTYPE_MPLS_MULTI: return PROTO_MPLS;
+            ETHERTYPE_PTP:       return PROTO_PTP;
+            default:             return PROTO_RAW_PAYLOAD;
         endcase
     endfunction
 
@@ -389,6 +486,7 @@ class packet;
             IP_PROTO_IPV6:     return PROTO_IPV6;
             IP_PROTO_OSPF:     return PROTO_OSPF;
             IP_PROTO_L2TP:     return PROTO_L2TP;
+            IP_PROTO_ESP:      return PROTO_ESP;
             default:           return PROTO_RAW_PAYLOAD;
         endcase
     endfunction
@@ -409,6 +507,7 @@ class packet;
             IPV6_NH_IPV6:     return PROTO_IPV6;
             IPV6_NH_OSPF:     return PROTO_OSPF;
             IPV6_NH_SCTP:     return PROTO_SCTP;
+            IPV6_NH_ESP:      return PROTO_ESP;
             default:          return PROTO_RAW_PAYLOAD;
         endcase
     endfunction
@@ -423,6 +522,7 @@ class packet;
             16'd2152: return PROTO_GTP_U;
             16'd2123: return PROTO_GTP_C;
             16'd4791: return PROTO_ROCEV2;
+            16'd4790: return PROTO_VXLAN_GPE;
             default:  return PROTO_RAW_PAYLOAD;
         endcase
     endfunction

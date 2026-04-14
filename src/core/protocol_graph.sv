@@ -184,6 +184,19 @@ class protocol_graph;
         register_transition(PROTO_MPLS, PROTO_IPV6);
         register_transition(PROTO_MPLS, PROTO_ETHERNET);
         register_transition(PROTO_MPLS, PROTO_MPLS);
+
+        // VXLAN-GPE -> {IPv4, IPv6, Ethernet, MPLS}
+        register_transition(PROTO_VXLAN_GPE, PROTO_IPV4);
+        register_transition(PROTO_VXLAN_GPE, PROTO_IPV6);
+        register_transition(PROTO_VXLAN_GPE, PROTO_ETHERNET);
+        register_transition(PROTO_VXLAN_GPE, PROTO_MPLS);
+
+        // UDP -> VXLAN_GPE
+        register_transition(PROTO_UDP, PROTO_VXLAN_GPE);
+
+        // IPv4/IPv6 -> ESP
+        register_transition(PROTO_IPV4, PROTO_ESP);
+        register_transition(PROTO_IPV6, PROTO_ESP);
     endfunction
 
 endclass
