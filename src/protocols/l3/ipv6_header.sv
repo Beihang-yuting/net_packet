@@ -16,10 +16,10 @@ class ipv6_header extends protocol_base;
     rand bit [127:0] dst_addr;
 
     constraint c_default {
-        version == 6;
-        hop_limit inside {[1:255]};
-        traffic_class == 0;
-        flow_label == 0;
+        soft version == 6;
+        soft hop_limit inside {[1:255]};
+        soft traffic_class == 0;
+        soft flow_label == 0;
     }
 
     function new();

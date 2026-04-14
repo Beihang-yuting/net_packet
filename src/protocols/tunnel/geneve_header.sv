@@ -17,12 +17,12 @@ class geneve_header extends protocol_base;
     byte unsigned   options[];
 
     constraint c_default {
-        version   == 2'h0;
-        o_flag    == 1'b0;
-        c_flag    == 1'b0;
-        reserved0 == 6'h0;
-        reserved1 == 8'h0;
-        opt_len   == 6'h0;
+        soft version   == 2'h0;
+        soft o_flag    == 1'b0;
+        soft c_flag    == 1'b0;
+        soft reserved0 == 6'h0;
+        soft reserved1 == 8'h0;
+        soft opt_len   == 6'h0;
     }
 
     function new();

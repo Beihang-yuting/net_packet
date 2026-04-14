@@ -50,43 +50,43 @@ class packet;
 
     // ----- Rand header pools (pre-allocated for single-call randomize) -----
     rand packet_template_e pkt_kind;
-    rand int unsigned      pkt_length_rand;  // Use separate rand field to avoid conflict with pkt_length
+    rand int unsigned      pkt_length_rand;
 
-    // L2
-    rand eth_header        eth[2];
-    rand vlan_header       vlan[2];
-    rand mpls_header       mpls[2];
+    // L2: outer/inner for tunnel scenarios; non-tunnel uses outer_xxx
+    rand eth_header        outer_eth, inner_eth;
+    rand vlan_header       outer_vlan, inner_vlan;
+    rand mpls_header       outer_mpls, inner_mpls;
     // L3
-    rand ipv4_header       ipv4[2];
-    rand ipv6_header       ipv6[2];
-    rand arp_header        arp[1];
+    rand ipv4_header       outer_ipv4, inner_ipv4;
+    rand ipv6_header       outer_ipv6, inner_ipv6;
+    rand arp_header        arp;
     // L4
-    rand tcp_header        tcp[1];
-    rand udp_header        udp[2];
-    rand icmp_header       icmp[1];
-    rand icmpv6_header     icmpv6[1];
-    rand sctp_header       sctp[1];
+    rand tcp_header        tcp;
+    rand udp_header        outer_udp, inner_udp;
+    rand icmp_header       icmp;
+    rand icmpv6_header     icmpv6;
+    rand sctp_header       sctp;
     // Tunnel
-    rand vxlan_header      vxlan[1];
-    rand gre_header        gre[1];
-    rand geneve_header     geneve[1];
-    rand gtp_u_header      gtp_u[1];
-    rand erspan_ii_header  erspan_ii[1];
-    rand erspan_iii_header erspan_iii[1];
-    rand vxlan_gpe_header  vxlan_gpe[1];
-    rand esp_header        esp[1];
-    rand ip_in_ip_header   ip_in_ip[1];
+    rand vxlan_header      vxlan;
+    rand gre_header        gre;
+    rand geneve_header     geneve;
+    rand gtp_u_header      gtp_u;
+    rand erspan_ii_header  erspan_ii;
+    rand erspan_iii_header erspan_iii;
+    rand vxlan_gpe_header  vxlan_gpe;
+    rand esp_header        esp;
+    rand ip_in_ip_header   ip_in_ip;
     // RDMA
-    rand rocev2_bth        rocev2[1];
-    rand iwarp_header      iwarp[1];
+    rand rocev2_bth        rocev2;
+    rand iwarp_header      iwarp;
     // Storage
-    rand nvme_tcp_header   nvme_tcp[1];
-    rand iscsi_header      iscsi[1];
+    rand nvme_tcp_header   nvme_tcp;
+    rand iscsi_header      iscsi;
     // App
-    rand ptp_header        ptp[1];
+    rand ptp_header        ptp;
 
     constraint c_pkt_length_rand {
-        pkt_length_rand inside {[64:9216]};
+        soft pkt_length_rand inside {[64:9216]};
     }
 
     // ----- Shared static instances -----
@@ -97,40 +97,41 @@ class packet;
     // Constructor — pre-allocate all rand header pools
     // =========================================================================
     function new();
-        foreach (eth[i])        eth[i] = new();
-        foreach (vlan[i])       vlan[i] = new();
-        foreach (mpls[i])       mpls[i] = new();
-        foreach (ipv4[i])       ipv4[i] = new();
-        foreach (ipv6[i])       ipv6[i] = new();
-        foreach (arp[i])        arp[i] = new();
-        foreach (tcp[i])        tcp[i] = new();
-        foreach (udp[i])        udp[i] = new();
-        foreach (icmp[i])       icmp[i] = new();
-        foreach (icmpv6[i])     icmpv6[i] = new();
-        foreach (sctp[i])       sctp[i] = new();
-        foreach (vxlan[i])      vxlan[i] = new();
-        foreach (gre[i])        gre[i] = new();
-        foreach (geneve[i])     geneve[i] = new();
-        foreach (gtp_u[i])      gtp_u[i] = new();
-        foreach (erspan_ii[i])  erspan_ii[i] = new();
-        foreach (erspan_iii[i]) erspan_iii[i] = new();
-        foreach (vxlan_gpe[i])  vxlan_gpe[i] = new();
-        foreach (esp[i])        esp[i] = new();
-        foreach (ip_in_ip[i])   ip_in_ip[i] = new();
-        foreach (rocev2[i])     rocev2[i] = new();
-        foreach (iwarp[i])      iwarp[i] = new();
-        foreach (nvme_tcp[i])   nvme_tcp[i] = new();
-        foreach (iscsi[i])      iscsi[i] = new();
-        foreach (ptp[i])        ptp[i] = new();
-        pkt_kind = ETH_IPV4_TCP;
+        outer_eth    = new(); inner_eth    = new();
+        outer_vlan   = new(); inner_vlan   = new();
+        outer_mpls   = new(); inner_mpls   = new();
+        outer_ipv4   = new(); inner_ipv4   = new();
+        outer_ipv6   = new(); inner_ipv6   = new();
+        outer_udp    = new(); inner_udp    = new();
+        arp          = new();
+        tcp          = new();
+        icmp         = new();
+        icmpv6       = new();
+        sctp         = new();
+        vxlan        = new();
+        gre          = new();
+        geneve       = new();
+        gtp_u        = new();
+        erspan_ii    = new();
+        erspan_iii   = new();
+        vxlan_gpe    = new();
+        esp          = new();
+        ip_in_ip     = new();
+        rocev2       = new();
+        iwarp        = new();
+        nvme_tcp     = new();
+        iscsi        = new();
+        ptp          = new();
+        pkt_kind     = ETH_IPV4_TCP;
     endfunction
 
     // =========================================================================
-    // post_randomize — auto-build layer_stack from pkt_kind + rand headers
+    // post_randomize — auto-build layer_stack from pkt_kind + rand headers,
+    //                  then auto do_pack() so raw_data is ready immediately
     // =========================================================================
     function void post_randomize();
         protocol_type_e chain[$];
-        // Counters for multi-instance protocol types
+        // Counters: 0=outer, 1=inner
         int eth_idx = 0, vlan_idx = 0, mpls_idx = 0;
         int ipv4_idx = 0, ipv6_idx = 0, udp_idx = 0;
 
@@ -140,40 +141,53 @@ class packet;
         foreach (chain[i]) begin
             case (chain[i])
                 PROTO_ETHERNET: begin
-                    layer_stack.push_back(eth[eth_idx]);
+                    layer_stack.push_back(eth_idx == 0 ? outer_eth : inner_eth);
                     eth_idx++;
                 end
                 PROTO_VLAN, PROTO_QINQ: begin
+                    vlan_header v = (vlan_idx == 0) ? outer_vlan : inner_vlan;
                     if (chain[i] == PROTO_QINQ) begin
-                        vlan[vlan_idx].proto_type = PROTO_QINQ;
-                        vlan[vlan_idx].ethertype  = ETHERTYPE_VLAN;
+                        v.proto_type = PROTO_QINQ;
+                        v.ethertype  = ETHERTYPE_VLAN;
                     end
-                    layer_stack.push_back(vlan[vlan_idx]);
+                    layer_stack.push_back(v);
                     vlan_idx++;
                 end
-                PROTO_MPLS:        begin layer_stack.push_back(mpls[mpls_idx]); mpls_idx++; end
-                PROTO_IPV4:        begin layer_stack.push_back(ipv4[ipv4_idx]); ipv4_idx++; end
-                PROTO_IPV6:        begin layer_stack.push_back(ipv6[ipv6_idx]); ipv6_idx++; end
-                PROTO_ARP:         layer_stack.push_back(arp[0]);
-                PROTO_TCP:         layer_stack.push_back(tcp[0]);
-                PROTO_UDP:         begin layer_stack.push_back(udp[udp_idx]); udp_idx++; end
-                PROTO_ICMP:        layer_stack.push_back(icmp[0]);
-                PROTO_ICMPV6:      layer_stack.push_back(icmpv6[0]);
-                PROTO_SCTP:        layer_stack.push_back(sctp[0]);
-                PROTO_VXLAN:       layer_stack.push_back(vxlan[0]);
-                PROTO_GRE:         layer_stack.push_back(gre[0]);
-                PROTO_GENEVE:      layer_stack.push_back(geneve[0]);
-                PROTO_GTP_U:       layer_stack.push_back(gtp_u[0]);
-                PROTO_ERSPAN_II:   layer_stack.push_back(erspan_ii[0]);
-                PROTO_ERSPAN_III:  layer_stack.push_back(erspan_iii[0]);
-                PROTO_VXLAN_GPE:   layer_stack.push_back(vxlan_gpe[0]);
-                PROTO_ESP:         layer_stack.push_back(esp[0]);
-                PROTO_IP_IN_IP:    layer_stack.push_back(ip_in_ip[0]);
-                PROTO_ROCEV2:      layer_stack.push_back(rocev2[0]);
-                PROTO_IWARP:       layer_stack.push_back(iwarp[0]);
-                PROTO_NVME_TCP:    layer_stack.push_back(nvme_tcp[0]);
-                PROTO_ISCSI:       layer_stack.push_back(iscsi[0]);
-                PROTO_PTP:         layer_stack.push_back(ptp[0]);
+                PROTO_MPLS: begin
+                    layer_stack.push_back(mpls_idx == 0 ? outer_mpls : inner_mpls);
+                    mpls_idx++;
+                end
+                PROTO_IPV4: begin
+                    layer_stack.push_back(ipv4_idx == 0 ? outer_ipv4 : inner_ipv4);
+                    ipv4_idx++;
+                end
+                PROTO_IPV6: begin
+                    layer_stack.push_back(ipv6_idx == 0 ? outer_ipv6 : inner_ipv6);
+                    ipv6_idx++;
+                end
+                PROTO_UDP: begin
+                    layer_stack.push_back(udp_idx == 0 ? outer_udp : inner_udp);
+                    udp_idx++;
+                end
+                PROTO_ARP:         layer_stack.push_back(arp);
+                PROTO_TCP:         layer_stack.push_back(tcp);
+                PROTO_ICMP:        layer_stack.push_back(icmp);
+                PROTO_ICMPV6:      layer_stack.push_back(icmpv6);
+                PROTO_SCTP:        layer_stack.push_back(sctp);
+                PROTO_VXLAN:       layer_stack.push_back(vxlan);
+                PROTO_GRE:         layer_stack.push_back(gre);
+                PROTO_GENEVE:      layer_stack.push_back(geneve);
+                PROTO_GTP_U:       layer_stack.push_back(gtp_u);
+                PROTO_ERSPAN_II:   layer_stack.push_back(erspan_ii);
+                PROTO_ERSPAN_III:  layer_stack.push_back(erspan_iii);
+                PROTO_VXLAN_GPE:   layer_stack.push_back(vxlan_gpe);
+                PROTO_ESP:         layer_stack.push_back(esp);
+                PROTO_IP_IN_IP:    layer_stack.push_back(ip_in_ip);
+                PROTO_ROCEV2:      layer_stack.push_back(rocev2);
+                PROTO_IWARP:       layer_stack.push_back(iwarp);
+                PROTO_NVME_TCP:    layer_stack.push_back(nvme_tcp);
+                PROTO_ISCSI:       layer_stack.push_back(iscsi);
+                PROTO_PTP:         layer_stack.push_back(ptp);
                 default: begin
                     $warning("packet::post_randomize: unsupported protocol %s in template %s",
                              chain[i].name(), pkt_kind.name());
@@ -181,8 +195,9 @@ class packet;
             endcase
         end
 
-        // Apply randomized pkt_length
+        // Apply randomized pkt_length and auto-pack
         pkt_length = pkt_length_rand;
+        do_pack();
     endfunction
 
     // =========================================================================

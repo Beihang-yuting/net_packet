@@ -32,13 +32,13 @@ class gtp_u_header extends protocol_base;
     rand bit [7:0]  next_ext_hdr_type;
 
     constraint c_default {
-        version      == 3'b001;
-        pt           == 1'b1;
-        reserved     == 1'b0;
-        e_flag       == 1'b0;
-        s_flag       == 1'b0;
-        pn_flag      == 1'b0;
-        message_type == 8'hFF;
+        soft version      == 3'b001;
+        soft pt           == 1'b1;
+        soft reserved     == 1'b0;
+        soft e_flag       == 1'b0;
+        soft s_flag       == 1'b0;
+        soft pn_flag      == 1'b0;
+        soft message_type == 8'hFF;
     }
 
     function new();

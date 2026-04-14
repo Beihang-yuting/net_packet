@@ -12,8 +12,8 @@ class mpls_header extends protocol_base;
     rand bit [7:0]  ttl;
 
     constraint c_default {
-        ttl inside {[1:255]};
-        s_bit == 1;
+        soft ttl inside {[1:255]};
+        soft s_bit == 1;
     }
 
     function new();

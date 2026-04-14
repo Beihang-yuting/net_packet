@@ -13,8 +13,8 @@ class icmp_header extends protocol_base;
     rand bit [15:0] sequence_num;
 
     constraint c_default {
-        icmp_type == 8;  // Echo Request
-        icmp_code == 0;
+        soft icmp_type == 8;  // Echo Request
+        soft icmp_code == 0;
     }
 
     function new();

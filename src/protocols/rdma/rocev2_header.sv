@@ -36,12 +36,12 @@ class rocev2_bth extends protocol_base;
     bit [31:0]      icrc;
 
     constraint c_default {
-        tver      == 4'd0;
-        reserved1 == 0;
-        reserved2 == 0;
-        pad_count == 0;
-        se        == 0;
-        mig_req   == 0;
+        soft tver      == 4'd0;
+        soft reserved1 == 0;
+        soft reserved2 == 0;
+        soft pad_count == 0;
+        soft se        == 0;
+        soft mig_req   == 0;
     }
 
     function new();

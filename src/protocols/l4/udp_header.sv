@@ -12,8 +12,8 @@ class udp_header extends protocol_base;
     rand bit [15:0] checksum;
 
     constraint c_default {
-        src_port inside {[1024:65535]};
-        dst_port inside {[1:65535]};
+        soft src_port inside {[1024:65535]};
+        soft dst_port inside {[1:65535]};
     }
 
     function new();

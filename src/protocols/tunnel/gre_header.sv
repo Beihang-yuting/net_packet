@@ -18,12 +18,12 @@ class gre_header extends protocol_base;
     rand bit [31:0] sequence_number;
 
     constraint c_default {
-        c_flag        == 1'b0;
-        k_flag        == 1'b0;
-        s_flag        == 1'b0;
-        reserved0     == 10'h0;
-        version       == 3'h0;
-        reserved1     == 16'h0;
+        soft c_flag        == 1'b0;
+        soft k_flag        == 1'b0;
+        soft s_flag        == 1'b0;
+        soft reserved0     == 10'h0;
+        soft version       == 3'h0;
+        soft reserved1     == 16'h0;
     }
 
     function new();

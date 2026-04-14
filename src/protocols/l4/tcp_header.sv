@@ -22,10 +22,10 @@ class tcp_header extends protocol_base;
     // flags[8]=NS, [7]=CWR, [6]=ECE, [5]=URG, [4]=ACK, [3]=PSH, [2]=RST, [1]=SYN, [0]=FIN
 
     constraint c_default {
-        src_port inside {[1024:65535]};
-        dst_port inside {[1:65535]};
-        reserved == 0;
-        window_size == 16'hFFFF;
+        soft src_port inside {[1024:65535]};
+        soft dst_port inside {[1:65535]};
+        soft reserved == 0;
+        soft window_size == 16'hFFFF;
     }
 
     function new();

@@ -12,9 +12,9 @@ class vxlan_header extends protocol_base;
     rand bit [7:0]  reserved2;
 
     constraint c_default {
-        flags     == 8'h08;
-        reserved1 == 24'h0;
-        reserved2 == 8'h0;
+        soft flags     == 8'h08;
+        soft reserved1 == 24'h0;
+        soft reserved2 == 8'h0;
     }
 
     function new();

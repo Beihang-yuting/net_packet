@@ -27,10 +27,10 @@ class vxlan_gpe_header extends protocol_base;
     rand bit [7:0]  reserved3;
 
     constraint c_default {
-        flags     == 8'h0C;   // I flag (bit3) + P flag (bit2)
-        reserved1 == 8'h0;
-        reserved2 == 8'h0;
-        reserved3 == 8'h0;
+        soft flags     == 8'h0C;   // I flag (bit3) + P flag (bit2)
+        soft reserved1 == 8'h0;
+        soft reserved2 == 8'h0;
+        soft reserved3 == 8'h0;
     }
 
     function new();

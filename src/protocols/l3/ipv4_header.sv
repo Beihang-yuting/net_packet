@@ -22,13 +22,13 @@ class ipv4_header extends protocol_base;
          byte unsigned options[$];
 
     constraint c_default {
-        version == 4;
-        ihl == 5;
-        ttl inside {[1:255]};
-        flags == 0;
-        fragment_offset == 0;
-        dscp == 0;
-        ecn == 0;
+        soft version == 4;
+        soft ihl == 5;
+        soft ttl inside {[1:255]};
+        soft flags == 0;
+        soft fragment_offset == 0;
+        soft dscp == 0;
+        soft ecn == 0;
     }
 
     function new();

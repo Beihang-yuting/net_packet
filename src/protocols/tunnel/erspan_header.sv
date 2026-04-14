@@ -22,9 +22,9 @@ class erspan_ii_header extends protocol_base;
     rand bit [19:0] index;
 
     constraint c_default {
-        version  == 4'd1;
-        en       == 2'd0;
-        reserved == 12'd0;
+        soft version  == 4'd1;
+        soft en       == 2'd0;
+        soft reserved == 12'd0;
     }
 
     function new();
@@ -148,8 +148,8 @@ class erspan_iii_header extends protocol_base;
     rand bit        o_flag;
 
     constraint c_default {
-        version == 4'd2;
-        bso     == 2'd0;
+        soft version == 4'd2;
+        soft bso     == 2'd0;
     }
 
     function new();

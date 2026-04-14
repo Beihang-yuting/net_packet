@@ -12,8 +12,8 @@ class vlan_header extends protocol_base;
     rand bit [15:0] ethertype;
 
     constraint c_default {
-        pcp inside {[0:7]};
-        vlan_id inside {[1:4094]};
+        soft pcp inside {[0:7]};
+        soft vlan_id inside {[1:4094]};
     }
 
     function new();

@@ -29,8 +29,8 @@ class iscsi_header extends protocol_base;
     byte unsigned   opcode_specific[28];
 
     constraint c_default {
-        reserved_bit == 1'b0;
-        reserved1    == 16'h0000;
+        soft reserved_bit == 1'b0;
+        soft reserved1    == 16'h0000;
     }
 
     function new();

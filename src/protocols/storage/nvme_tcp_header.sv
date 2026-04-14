@@ -16,9 +16,9 @@ class nvme_tcp_header extends protocol_base;
     rand bit [31:0] plen;      // Entire PDU length
 
     constraint c_default {
-        flags == 8'h00;
-        hlen  == 8'd8;
-        pdo   == 8'h00;
+        soft flags == 8'h00;
+        soft hlen  == 8'd8;
+        soft pdo   == 8'h00;
     }
 
     function new();

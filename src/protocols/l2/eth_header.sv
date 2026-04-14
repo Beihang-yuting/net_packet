@@ -11,8 +11,8 @@ class eth_header extends protocol_base;
     rand bit [15:0] ethertype;
 
     constraint c_default {
-        dst_mac inside {[0:48'hFFFFFFFFFFFF]};
-        src_mac inside {[0:48'hFFFFFFFFFFFF]};
+        soft dst_mac inside {[0:48'hFFFFFFFFFFFF]};
+        soft src_mac inside {[0:48'hFFFFFFFFFFFF]};
     }
 
     function new();

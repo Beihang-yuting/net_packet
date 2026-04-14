@@ -33,12 +33,12 @@ class iwarp_header extends protocol_base;
     rand bit [31:0] sink_stag;
 
     constraint c_default {
-        ddp_version    == 8'd1;
-        rdmap_version  == 4'd1;
-        mpa_reserved   == 16'h0;
-        ddp_reserved   == 6'h0;
-        padding        == 8'h0;
-        rdmap_reserved == 16'h0;
+        soft ddp_version    == 8'd1;
+        soft rdmap_version  == 4'd1;
+        soft mpa_reserved   == 16'h0;
+        soft ddp_reserved   == 6'h0;
+        soft padding        == 8'h0;
+        soft rdmap_reserved == 16'h0;
     }
 
     function new();

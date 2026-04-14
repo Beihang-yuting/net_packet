@@ -17,11 +17,11 @@ class arp_header extends protocol_base;
     rand bit [31:0] target_ip;
 
     constraint c_default {
-        hw_type == 1;
-        proto_type_field == 16'h0800;
-        hw_len == 6;
-        proto_len == 4;
-        opcode inside {1, 2};
+        soft hw_type == 1;
+        soft proto_type_field == 16'h0800;
+        soft hw_len == 6;
+        soft proto_len == 4;
+        soft opcode inside {1, 2};
     }
 
     function new();
