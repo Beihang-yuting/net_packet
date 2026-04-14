@@ -5,6 +5,7 @@
 +incdir+src/protocols/l3
 +incdir+src/protocols/l4
 +incdir+src/protocols/tunnel
++incdir+src/protocols/rdma
 +incdir+src/core
 
 src/common/packet_defines.sv
@@ -25,6 +26,7 @@ src/protocols/tunnel/geneve_header.sv
 src/protocols/tunnel/erspan_header.sv
 src/protocols/tunnel/gtp_header.sv
 src/protocols/tunnel/ip_in_ip_header.sv
+src/protocols/rdma/rocev2_header.sv
 src/core/protocol_graph.sv
 src/core/template_registry.sv
 src/core/packet.sv
