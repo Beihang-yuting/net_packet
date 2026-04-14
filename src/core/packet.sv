@@ -432,6 +432,17 @@ class packet;
     endfunction
 
     // =========================================================================
+    // randomize_all — randomize every layer with its built-in constraints
+    // =========================================================================
+    function void randomize_all();
+        foreach (layer_stack[i]) begin
+            if (!layer_stack[i].randomize())
+                $warning("packet::randomize_all: randomize failed for layer %0d (%s)",
+                         i, layer_stack[i].proto_type.name());
+        end
+    endfunction
+
+    // =========================================================================
     // do_pack
     // =========================================================================
     function void do_pack();
