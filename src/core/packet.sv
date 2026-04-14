@@ -48,17 +48,14 @@ class packet;
     byte unsigned    payload_fixed_val = 8'h00;
     byte unsigned    payload_pattern[$];
 
-    // ----- Custom chain (overrides pkt_kind when set) -----
-    protected protocol_type_e custom_chain[$];
-    protected bit              use_custom_chain = 0;
-
     // ----- Rand header pools (pre-allocated for single-call randomize) -----
     rand packet_template_e pkt_kind;
     rand int unsigned      pkt_length_rand;
 
     // L2: outer/inner for tunnel scenarios; non-tunnel uses outer_xxx
     rand eth_header        outer_eth, inner_eth;
-    rand vlan_header       outer_vlan, inner_vlan;
+    rand vlan_header       vlan[4];     // Support up to 4 VLAN tags
+    rand int unsigned      vlan_num;    // Number of VLAN tags to insert (0-4)
     rand mpls_header       outer_mpls, inner_mpls;
     // L3
     rand ipv4_header       outer_ipv4, inner_ipv4;
@@ -93,6 +90,11 @@ class packet;
         soft pkt_length_rand inside {[64:9216]};
     }
 
+    constraint c_vlan_num {
+        soft vlan_num == 0;
+        vlan_num inside {[0:4]};
+    }
+
     // ----- Shared static instances -----
     static protocol_graph    s_graph    = new();
     static template_registry s_registry = new();
@@ -102,7 +104,8 @@ class packet;
     // =========================================================================
     function new();
         outer_eth    = new(); inner_eth    = new();
-        outer_vlan   = new(); inner_vlan   = new();
+        foreach (vlan[i]) vlan[i] = new();
+        vlan_num = 0;
         outer_mpls   = new(); inner_mpls   = new();
         outer_ipv4   = new(); inner_ipv4   = new();
         outer_ipv6   = new(); inner_ipv6   = new();
@@ -130,47 +133,16 @@ class packet;
     endfunction
 
     // =========================================================================
-    // set_chain — specify arbitrary protocol chain (overrides pkt_kind)
-    // Usage: pkt.set_chain('{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV4, PROTO_TCP});
-    // =========================================================================
-    function void set_chain(protocol_type_e chain[$]);
-        // Validate against protocol graph (unless force_mode)
-        if (!force_mode) begin
-            if (!s_graph.validate_chain(chain)) begin
-                $warning("packet::set_chain: invalid protocol chain (use force_mode=1 to override)");
-                foreach (chain[i]) begin
-                    if (i > 0 && !s_graph.is_valid_next(chain[i-1], chain[i]))
-                        $warning("  invalid transition: %s -> %s at position %0d",
-                                 chain[i-1].name(), chain[i].name(), i);
-                end
-            end
-        end
-        custom_chain     = chain;
-        use_custom_chain = 1;
-    endfunction
-
-    // clear_chain — revert to using pkt_kind template
-    function void clear_chain();
-        custom_chain.delete();
-        use_custom_chain = 0;
-    endfunction
-
-    // =========================================================================
     // post_randomize — auto-build layer_stack from pkt_kind + rand headers,
     //                  then auto do_pack() so raw_data is ready immediately
     // =========================================================================
     function void post_randomize();
         protocol_type_e chain[$];
-        // Counters: 0=outer, 1=inner
-        int eth_idx = 0, vlan_idx = 0, mpls_idx = 0;
+        int eth_idx = 0, mpls_idx = 0;
         int ipv4_idx = 0, ipv6_idx = 0, udp_idx = 0;
+        bit first_eth_done = 0;
 
-        // Priority: custom_chain > pkt_kind template
-        if (use_custom_chain && custom_chain.size() > 0)
-            chain = custom_chain;
-        else
-            s_registry.get_chain(pkt_kind, chain);
-
+        s_registry.get_chain(pkt_kind, chain);
         layer_stack.delete();
 
         foreach (chain[i]) begin
@@ -178,15 +150,26 @@ class packet;
                 PROTO_ETHERNET: begin
                     layer_stack.push_back(eth_idx == 0 ? outer_eth : inner_eth);
                     eth_idx++;
+                    // Insert VLAN tags after first Ethernet only
+                    if (!first_eth_done) begin
+                        first_eth_done = 1;
+                        for (int v = 0; v < vlan_num; v++) begin
+                            if (v < 4) begin
+                                // First VLAN in multi-VLAN is QinQ (S-VLAN, ethertype=0x88A8)
+                                // Last VLAN is C-VLAN (ethertype set by calc_fields)
+                                if (vlan_num > 1 && v < vlan_num - 1) begin
+                                    vlan[v].proto_type = PROTO_QINQ;
+                                    vlan[v].ethertype  = ETHERTYPE_VLAN;
+                                end else begin
+                                    vlan[v].proto_type = PROTO_VLAN;
+                                end
+                                layer_stack.push_back(vlan[v]);
+                            end
+                        end
+                    end
                 end
                 PROTO_VLAN, PROTO_QINQ: begin
-                    vlan_header v = (vlan_idx == 0) ? outer_vlan : inner_vlan;
-                    if (chain[i] == PROTO_QINQ) begin
-                        v.proto_type = PROTO_QINQ;
-                        v.ethertype  = ETHERTYPE_VLAN;
-                    end
-                    layer_stack.push_back(v);
-                    vlan_idx++;
+                    // Skip — VLAN is now handled by vlan_num insertion above
                 end
                 PROTO_MPLS: begin
                     layer_stack.push_back(mpls_idx == 0 ? outer_mpls : inner_mpls);

@@ -64,48 +64,6 @@ class template_registry;
         c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_SCTP};
         register_template(ETH_IPV6_SCTP, c);
 
-        // --- VLAN ---
-
-        // ETH_VLAN_IPV4_TCP = 10
-        c = '{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_VLAN_IPV4_TCP, c);
-
-        // ETH_VLAN_IPV4_UDP = 11
-        c = '{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_VLAN_IPV4_UDP, c);
-
-        // ETH_VLAN_IPV6_TCP = 12
-        c = '{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV6, PROTO_TCP};
-        register_template(ETH_VLAN_IPV6_TCP, c);
-
-        // ETH_VLAN_IPV6_UDP = 13
-        c = '{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV6, PROTO_UDP};
-        register_template(ETH_VLAN_IPV6_UDP, c);
-
-        // ETH_QINQ_IPV4_TCP = 14
-        c = '{PROTO_ETHERNET, PROTO_QINQ, PROTO_VLAN, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_QINQ_IPV4_TCP, c);
-
-        // ETH_QINQ_IPV4_UDP = 15
-        c = '{PROTO_ETHERNET, PROTO_QINQ, PROTO_VLAN, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_QINQ_IPV4_UDP, c);
-
-        // ETH_VLAN_IPV4_ICMP = 16
-        c = '{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV4, PROTO_ICMP};
-        register_template(ETH_VLAN_IPV4_ICMP, c);
-
-        // ETH_VLAN_IPV6_ICMPV6 = 17
-        c = '{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV6, PROTO_ICMPV6};
-        register_template(ETH_VLAN_IPV6_ICMPV6, c);
-
-        // ETH_VLAN_ARP = 18
-        c = '{PROTO_ETHERNET, PROTO_VLAN, PROTO_ARP};
-        register_template(ETH_VLAN_ARP, c);
-
-        // ETH_QINQ_IPV6_TCP = 19
-        c = '{PROTO_ETHERNET, PROTO_QINQ, PROTO_VLAN, PROTO_IPV6, PROTO_TCP};
-        register_template(ETH_QINQ_IPV6_TCP, c);
-
         // --- Tunnel ---
 
         // ETH_IPV4_UDP_VXLAN_ETH_IPV4_TCP = 20
@@ -148,20 +106,6 @@ class template_registry;
         c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_VXLAN, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
         register_template(ETH_IPV6_UDP_VXLAN_ETH_IPV4_TCP, c);
 
-        // --- VLAN + Tunnel ---
-
-        // ETH_VLAN_IPV4_UDP_VXLAN_ETH_IPV4_TCP = 30
-        c = '{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV4, PROTO_UDP, PROTO_VXLAN, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_VLAN_IPV4_UDP_VXLAN_ETH_IPV4_TCP, c);
-
-        // ETH_VLAN_IPV4_UDP_VXLAN_ETH_IPV4_UDP = 31
-        c = '{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV4, PROTO_UDP, PROTO_VXLAN, PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_VLAN_IPV4_UDP_VXLAN_ETH_IPV4_UDP, c);
-
-        // ETH_VLAN_IPV4_GRE_IPV4_TCP = 32
-        c = '{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV4, PROTO_GRE, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_VLAN_IPV4_GRE_IPV4_TCP, c);
-
         // ETH_IPV4_UDP_GENEVE_ETH_IPV6_TCP = 33
         c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_GENEVE, PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP};
         register_template(ETH_IPV4_UDP_GENEVE_ETH_IPV6_TCP, c);
@@ -196,17 +140,9 @@ class template_registry;
         c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_ROCEV2};
         register_template(ETH_IPV4_UDP_ROCEV2, c);
 
-        // ETH_VLAN_IPV4_UDP_ROCEV2 = 41
-        c = '{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV4, PROTO_UDP, PROTO_ROCEV2};
-        register_template(ETH_VLAN_IPV4_UDP_ROCEV2, c);
-
         // ETH_IPV6_UDP_ROCEV2 = 42
         c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_ROCEV2};
         register_template(ETH_IPV6_UDP_ROCEV2, c);
-
-        // ETH_VLAN_IPV6_UDP_ROCEV2 = 43
-        c = '{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV6, PROTO_UDP, PROTO_ROCEV2};
-        register_template(ETH_VLAN_IPV6_UDP_ROCEV2, c);
 
         // --- Storage ---
 
@@ -233,14 +169,6 @@ class template_registry;
         // ETH_IPV6_TCP_ISCSI = 55
         c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP, PROTO_ISCSI};
         register_template(ETH_IPV6_TCP_ISCSI, c);
-
-        // ETH_VLAN_IPV4_TCP_NVME_TCP = 56
-        c = '{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV4, PROTO_TCP, PROTO_NVME_TCP};
-        register_template(ETH_VLAN_IPV4_TCP_NVME_TCP, c);
-
-        // ETH_VLAN_IPV4_TCP_ISCSI = 57
-        c = '{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV4, PROTO_TCP, PROTO_ISCSI};
-        register_template(ETH_VLAN_IPV4_TCP_ISCSI, c);
 
         // --- Mgmt/Control ---
 
