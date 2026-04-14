@@ -57,7 +57,10 @@ test_pcap: test/test_pcap.sv
 test_ip_fragment: test/test_ip_fragment.sv
 	$(MAKE) run_ip_fragment
 
-test_all: test_protocol_headers test_protocol_graph test_packet_builder test_tunnel_headers test_tunnel_packet test_rdma_storage_headers test_rdma_storage_packet test_phase2c_headers test_phase2c_packet test_parser test_pcap test_ip_fragment
+test_protocol_sequences: test/test_protocol_sequences.sv
+	$(MAKE) run_protocol_sequences
+
+test_all: test_protocol_headers test_protocol_graph test_packet_builder test_tunnel_headers test_tunnel_packet test_rdma_storage_headers test_rdma_storage_packet test_phase2c_headers test_phase2c_packet test_parser test_pcap test_ip_fragment test_protocol_sequences
 
 clean:
 	rm -rf simv_* csrc *.log *.vpd *.fsdb work transcript *.wlf DVEfiles

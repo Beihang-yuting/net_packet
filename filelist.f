@@ -11,6 +11,7 @@
 +incdir+src/core
 +incdir+src/parser
 +incdir+src/pcap
++incdir+src/sequence
 
 src/common/packet_defines.sv
 src/common/packet_utils.sv
@@ -48,3 +49,5 @@ src/parser/protocol_parser.sv
 src/parser/packet_comparator.sv
 src/pcap/pcap_writer.sv
 src/pcap/pcap_reader.sv
+src/sequence/protocol_sequence.sv
+src/sequence/tcp_sequences.sv
