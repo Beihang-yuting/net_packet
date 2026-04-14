@@ -54,8 +54,10 @@ class packet;
 
     // L2: outer/inner for tunnel scenarios; non-tunnel uses outer_xxx
     rand eth_header        outer_eth, inner_eth;
-    rand vlan_header       vlan[4];     // Support up to 4 VLAN tags
-    rand int unsigned      vlan_num;    // Number of VLAN tags to insert (0-4)
+    rand vlan_header       outer_vlan[4];   // Up to 4 VLAN tags after outer Ethernet
+    rand int unsigned      outer_vlan_num;  // Number of outer VLAN tags (0-4)
+    rand vlan_header       inner_vlan[4];   // Up to 4 VLAN tags after inner Ethernet (tunnel)
+    rand int unsigned      inner_vlan_num;  // Number of inner VLAN tags (0-4)
     rand mpls_header       outer_mpls, inner_mpls;
     // L3
     rand ipv4_header       outer_ipv4, inner_ipv4;
@@ -91,8 +93,10 @@ class packet;
     }
 
     constraint c_vlan_num {
-        soft vlan_num == 0;
-        vlan_num inside {[0:4]};
+        soft outer_vlan_num == 0;
+        outer_vlan_num inside {[0:4]};
+        soft inner_vlan_num == 0;
+        inner_vlan_num inside {[0:4]};
     }
 
     // ----- Shared static instances -----
@@ -104,8 +108,10 @@ class packet;
     // =========================================================================
     function new();
         outer_eth    = new(); inner_eth    = new();
-        foreach (vlan[i]) vlan[i] = new();
-        vlan_num = 0;
+        foreach (outer_vlan[i]) outer_vlan[i] = new();
+        foreach (inner_vlan[i]) inner_vlan[i] = new();
+        outer_vlan_num = 0;
+        inner_vlan_num = 0;
         outer_mpls   = new(); inner_mpls   = new();
         outer_ipv4   = new(); inner_ipv4   = new();
         outer_ipv6   = new(); inner_ipv6   = new();
@@ -149,24 +155,22 @@ class packet;
             case (chain[i])
                 PROTO_ETHERNET: begin
                     layer_stack.push_back(eth_idx == 0 ? outer_eth : inner_eth);
-                    eth_idx++;
-                    // Insert VLAN tags after first Ethernet only
-                    if (!first_eth_done) begin
-                        first_eth_done = 1;
-                        for (int v = 0; v < vlan_num; v++) begin
-                            if (v < 4) begin
-                                // First VLAN in multi-VLAN is QinQ (S-VLAN, ethertype=0x88A8)
-                                // Last VLAN is C-VLAN (ethertype set by calc_fields)
-                                if (vlan_num > 1 && v < vlan_num - 1) begin
-                                    vlan[v].proto_type = PROTO_QINQ;
-                                    vlan[v].ethertype  = ETHERTYPE_VLAN;
-                                end else begin
-                                    vlan[v].proto_type = PROTO_VLAN;
-                                end
-                                layer_stack.push_back(vlan[v]);
+                    // Insert VLAN tags after this Ethernet layer
+                    begin
+                        int cur_vlan_num = (eth_idx == 0) ? outer_vlan_num : inner_vlan_num;
+                        for (int v = 0; v < cur_vlan_num && v < 4; v++) begin
+                            vlan_header vh = (eth_idx == 0) ? outer_vlan[v] : inner_vlan[v];
+                            // Multi-VLAN: non-last VLANs are S-VLAN (QinQ ethertype)
+                            if (cur_vlan_num > 1 && v < cur_vlan_num - 1) begin
+                                vh.proto_type = PROTO_QINQ;
+                                vh.ethertype  = ETHERTYPE_VLAN;
+                            end else begin
+                                vh.proto_type = PROTO_VLAN;
                             end
+                            layer_stack.push_back(vh);
                         end
                     end
+                    eth_idx++;
                 end
                 PROTO_VLAN, PROTO_QINQ: begin
                     // Skip — VLAN is now handled by vlan_num insertion above
