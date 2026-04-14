@@ -236,6 +236,191 @@ class packet;
     endfunction
 
     // =========================================================================
+    // Typed layer accessors — no $cast needed
+    // idx=0 returns first instance, idx=1 returns second, etc.
+    // Returns null if not found.
+    // =========================================================================
+
+    protected function protocol_base get_layer_n(protocol_type_e proto, int idx = 0);
+        int count = 0;
+        foreach (layer_stack[i]) begin
+            if (layer_stack[i].proto_type == proto) begin
+                if (count == idx) return layer_stack[i];
+                count++;
+            end
+        end
+        return null;
+    endfunction
+
+    function eth_header get_eth(int idx = 0);
+        eth_header h;
+        protocol_base p = get_layer_n(PROTO_ETHERNET, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function vlan_header get_vlan(int idx = 0);
+        vlan_header h;
+        protocol_base p = get_layer_n(PROTO_VLAN, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function mpls_header get_mpls(int idx = 0);
+        mpls_header h;
+        protocol_base p = get_layer_n(PROTO_MPLS, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function ipv4_header get_ipv4(int idx = 0);
+        ipv4_header h;
+        protocol_base p = get_layer_n(PROTO_IPV4, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function ipv6_header get_ipv6(int idx = 0);
+        ipv6_header h;
+        protocol_base p = get_layer_n(PROTO_IPV6, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function arp_header get_arp(int idx = 0);
+        arp_header h;
+        protocol_base p = get_layer_n(PROTO_ARP, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function tcp_header get_tcp(int idx = 0);
+        tcp_header h;
+        protocol_base p = get_layer_n(PROTO_TCP, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function udp_header get_udp(int idx = 0);
+        udp_header h;
+        protocol_base p = get_layer_n(PROTO_UDP, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function icmp_header get_icmp(int idx = 0);
+        icmp_header h;
+        protocol_base p = get_layer_n(PROTO_ICMP, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function icmpv6_header get_icmpv6(int idx = 0);
+        icmpv6_header h;
+        protocol_base p = get_layer_n(PROTO_ICMPV6, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function sctp_header get_sctp(int idx = 0);
+        sctp_header h;
+        protocol_base p = get_layer_n(PROTO_SCTP, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function vxlan_header get_vxlan(int idx = 0);
+        vxlan_header h;
+        protocol_base p = get_layer_n(PROTO_VXLAN, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function gre_header get_gre(int idx = 0);
+        gre_header h;
+        protocol_base p = get_layer_n(PROTO_GRE, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function geneve_header get_geneve(int idx = 0);
+        geneve_header h;
+        protocol_base p = get_layer_n(PROTO_GENEVE, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function gtp_u_header get_gtp_u(int idx = 0);
+        gtp_u_header h;
+        protocol_base p = get_layer_n(PROTO_GTP_U, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function erspan_ii_header get_erspan_ii(int idx = 0);
+        erspan_ii_header h;
+        protocol_base p = get_layer_n(PROTO_ERSPAN_II, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function erspan_iii_header get_erspan_iii(int idx = 0);
+        erspan_iii_header h;
+        protocol_base p = get_layer_n(PROTO_ERSPAN_III, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function vxlan_gpe_header get_vxlan_gpe(int idx = 0);
+        vxlan_gpe_header h;
+        protocol_base p = get_layer_n(PROTO_VXLAN_GPE, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function esp_header get_esp(int idx = 0);
+        esp_header h;
+        protocol_base p = get_layer_n(PROTO_ESP, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function rocev2_bth get_rocev2(int idx = 0);
+        rocev2_bth h;
+        protocol_base p = get_layer_n(PROTO_ROCEV2, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function iwarp_header get_iwarp(int idx = 0);
+        iwarp_header h;
+        protocol_base p = get_layer_n(PROTO_IWARP, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function nvme_tcp_header get_nvme_tcp(int idx = 0);
+        nvme_tcp_header h;
+        protocol_base p = get_layer_n(PROTO_NVME_TCP, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function iscsi_header get_iscsi(int idx = 0);
+        iscsi_header h;
+        protocol_base p = get_layer_n(PROTO_ISCSI, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    function ptp_header get_ptp(int idx = 0);
+        ptp_header h;
+        protocol_base p = get_layer_n(PROTO_PTP, idx);
+        if (p != null) $cast(h, p);
+        return h;
+    endfunction
+
+    // =========================================================================
     // get_all_headers_length
     // =========================================================================
     function int get_all_headers_length();
