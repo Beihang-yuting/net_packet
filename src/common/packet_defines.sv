@@ -48,6 +48,8 @@ typedef enum int {
     PROTO_GTP_C         = 50,
     PROTO_MPLS_GRE      = 51,
     PROTO_MPLS_UDP      = 52,
+    PROTO_VXLAN_GPE     = 53,
+    PROTO_ESP           = 54,
     // App/Mgmt
     PROTO_DNS           = 60,
     PROTO_HTTP          = 61,
@@ -172,7 +174,8 @@ typedef enum bit [7:0] {
     IP_PROTO_ICMPV6   = 8'd58,
     IP_PROTO_OSPF     = 8'd89,
     IP_PROTO_SCTP     = 8'd132,
-    IP_PROTO_L2TP     = 8'd115
+    IP_PROTO_L2TP     = 8'd115,
+    IP_PROTO_ESP      = 8'd50
 } ip_protocol_e;
 
 typedef enum bit [7:0] {
@@ -186,7 +189,8 @@ typedef enum bit [7:0] {
     IPV6_NH_ICMPV6     = 8'd58,
     IPV6_NH_DEST       = 8'd60,
     IPV6_NH_OSPF       = 8'd89,
-    IPV6_NH_SCTP       = 8'd132
+    IPV6_NH_SCTP       = 8'd132,
+    IPV6_NH_ESP        = 8'd50
 } ipv6_next_header_e;
 
 `endif // PACKET_DEFINES_SV
