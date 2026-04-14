@@ -51,6 +51,18 @@ class udp_header extends protocol_base;
 
     virtual function void calc_fields(byte unsigned payload_data[$], protocol_type_e next_proto);
         if (!auto_calc) return;
+        // Auto-set well-known dst_port if not already set by user
+        if (dst_port == 0) begin
+            case (next_proto)
+                PROTO_VXLAN:     dst_port = 16'd4789;
+                PROTO_GENEVE:    dst_port = 16'd6081;
+                PROTO_GTP_U:     dst_port = 16'd2152;
+                PROTO_GTP_C:     dst_port = 16'd2123;
+                PROTO_ROCEV2:    dst_port = 16'd4791;
+                PROTO_VXLAN_GPE: dst_port = 16'd4790;
+                default: ;
+            endcase
+        end
         length   = 8 + payload_data.size();
         checksum = 0;
     endfunction

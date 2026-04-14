@@ -130,6 +130,16 @@ class tcp_header extends protocol_base;
 
     virtual function void calc_fields(byte unsigned payload_data[$], protocol_type_e next_proto);
         if (!auto_calc) return;
+        // Auto-set well-known dst_port if not already set by user
+        if (dst_port == 0) begin
+            case (next_proto)
+                PROTO_NVME_TCP: dst_port = 16'd4420;
+                PROTO_ISCSI:    dst_port = 16'd3260;
+                PROTO_HTTP:     dst_port = 16'd80;
+                PROTO_BGP:      dst_port = 16'd179;
+                default: ;
+            endcase
+        end
         data_offset = 5 + options.size() / 4;
         checksum = 0;
     endfunction

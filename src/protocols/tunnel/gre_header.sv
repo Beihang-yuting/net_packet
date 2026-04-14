@@ -91,9 +91,18 @@ class gre_header extends protocol_base;
             PROTO_IPV6:      protocol_type = ETHERTYPE_IPV6;
             PROTO_ETHERNET:  protocol_type = 16'h6558;
             PROTO_ERSPAN_II: protocol_type = 16'h88BE;
-            PROTO_ERSPAN_III: protocol_type = 16'h22EB;
-            default:         protocol_type = ETHERTYPE_IPV4;
+            PROTO_ERSPAN_III:protocol_type = 16'h22EB;
+            default: ;
         endcase
+        // Compute GRE checksum when c_flag is set
+        if (c_flag) begin
+            byte unsigned all_data[$];
+            checksum = 0;
+            reserved1 = 0;
+            pack_header(all_data);
+            foreach (payload_data[i]) all_data.push_back(payload_data[i]);
+            checksum = packet_utils::ones_complement_checksum(all_data);
+        end
     endfunction
 
     virtual function protocol_base clone();

@@ -321,6 +321,141 @@ class packet;
         foreach (payload[i]) begin
             raw_data.push_back(payload[i]);
         end
+
+        // Compute TCP/UDP/ICMPv6 checksums (requires full raw_data + IP info)
+        compute_transport_checksums();
+    endfunction
+
+    // =========================================================================
+    // compute_transport_checksums — post-pack pseudo-header checksums
+    // =========================================================================
+    protected function void compute_transport_checksums();
+        for (int i = 0; i < layer_stack.size(); i++) begin
+            protocol_type_e ptype = layer_stack[i].proto_type;
+            if (ptype != PROTO_TCP && ptype != PROTO_UDP && ptype != PROTO_ICMPV6) continue;
+
+            // Find parent IP layer (search backwards from current layer)
+            int ip_idx = -1;
+            for (int j = i - 1; j >= 0; j--) begin
+                if (layer_stack[j].proto_type == PROTO_IPV4 ||
+                    layer_stack[j].proto_type == PROTO_IPV6) begin
+                    ip_idx = j;
+                    break;
+                end
+            end
+            if (ip_idx < 0) continue;
+
+            // Build pseudo-header + transport header + payload
+            begin
+                byte unsigned pseudo_hdr[$];
+                byte unsigned transport_data[$];
+                bit [31:0] src_v4, dst_v4;
+                bit [127:0] src_v6, dst_v6;
+                int transport_len;
+
+                // Collect transport header + everything after it until next IP layer or end
+                // Simply: pack current layer + remaining payload from raw_data
+                layer_stack[i].pack_header(transport_data);
+
+                // Calculate transport payload: bytes from raw_data after this layer's header
+                begin
+                    int hdr_offset = 0;
+                    for (int k = 0; k <= i; k++)
+                        hdr_offset += layer_stack[k].get_header_length();
+
+                    // Find end: either next Ethernet/IP layer or end of raw_data
+                    int end_offset = raw_data.size();
+                    for (int k = i + 1; k < layer_stack.size(); k++) begin
+                        // If we hit another IP layer that's not directly inside this transport
+                        // (e.g., in tunnel scenario), stop
+                        if (layer_stack[k].proto_type == PROTO_ETHERNET) begin
+                            // This means there's a tunnel — the payload after transport
+                            // is the tunnel content, include it
+                            break;
+                        end
+                    end
+
+                    for (int k = hdr_offset; k < end_offset; k++)
+                        transport_data.push_back(raw_data[k]);
+                end
+
+                transport_len = transport_data.size();
+
+                // Build pseudo-header based on IP version
+                if (layer_stack[ip_idx].proto_type == PROTO_IPV4) begin
+                    ipv4_header ip4;
+                    if (!$cast(ip4, layer_stack[ip_idx])) continue;
+                    // IPv4 pseudo-header: src(4) + dst(4) + zero(1) + protocol(1) + length(2)
+                    packet_utils::pack_bytes_32(pseudo_hdr, ip4.src_addr);
+                    packet_utils::pack_bytes_32(pseudo_hdr, ip4.dst_addr);
+                    pseudo_hdr.push_back(8'h00);
+                    pseudo_hdr.push_back(ip4.protocol);
+                    packet_utils::pack_bytes_16(pseudo_hdr, transport_len[15:0]);
+                end else begin
+                    ipv6_header ip6;
+                    if (!$cast(ip6, layer_stack[ip_idx])) continue;
+                    // IPv6 pseudo-header: src(16) + dst(16) + length(4) + zeros(3) + next_header(1)
+                    for (int b = 15; b >= 0; b--)
+                        pseudo_hdr.push_back(ip6.src_addr[b*8 +: 8]);
+                    for (int b = 15; b >= 0; b--)
+                        pseudo_hdr.push_back(ip6.dst_addr[b*8 +: 8]);
+                    packet_utils::pack_bytes_32(pseudo_hdr, transport_len);
+                    pseudo_hdr.push_back(8'h00);
+                    pseudo_hdr.push_back(8'h00);
+                    pseudo_hdr.push_back(8'h00);
+                    pseudo_hdr.push_back(ip6.next_header);
+                end
+
+                // Combine pseudo-header + transport data
+                foreach (transport_data[k])
+                    pseudo_hdr.push_back(transport_data[k]);
+
+                // Compute checksum
+                begin
+                    bit [15:0] cksum = packet_utils::ones_complement_checksum(pseudo_hdr);
+
+                    // Write checksum back into the layer AND into raw_data
+                    if (ptype == PROTO_TCP) begin
+                        tcp_header tcp;
+                        if ($cast(tcp, layer_stack[i])) begin
+                            tcp.checksum = cksum;
+                            // Update raw_data: TCP checksum is at offset +16 within TCP header
+                            begin
+                                int tcp_offset = 0;
+                                for (int k = 0; k < i; k++)
+                                    tcp_offset += layer_stack[k].get_header_length();
+                                raw_data[tcp_offset + 16] = cksum[15:8];
+                                raw_data[tcp_offset + 17] = cksum[7:0];
+                            end
+                        end
+                    end else if (ptype == PROTO_UDP) begin
+                        udp_header udp;
+                        if ($cast(udp, layer_stack[i])) begin
+                            udp.checksum = cksum;
+                            begin
+                                int udp_offset = 0;
+                                for (int k = 0; k < i; k++)
+                                    udp_offset += layer_stack[k].get_header_length();
+                                raw_data[udp_offset + 6] = cksum[15:8];
+                                raw_data[udp_offset + 7] = cksum[7:0];
+                            end
+                        end
+                    end else if (ptype == PROTO_ICMPV6) begin
+                        icmpv6_header icmpv6;
+                        if ($cast(icmpv6, layer_stack[i])) begin
+                            icmpv6.checksum = cksum;
+                            begin
+                                int icmpv6_offset = 0;
+                                for (int k = 0; k < i; k++)
+                                    icmpv6_offset += layer_stack[k].get_header_length();
+                                raw_data[icmpv6_offset + 2] = cksum[15:8];
+                                raw_data[icmpv6_offset + 3] = cksum[7:0];
+                            end
+                        end
+                    end
+                end
+            end
+        end
     endfunction
 
     // =========================================================================
