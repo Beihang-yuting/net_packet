@@ -48,6 +48,10 @@ class packet;
     byte unsigned    payload_fixed_val = 8'h00;
     byte unsigned    payload_pattern[$];
 
+    // ----- Custom chain for abnormal/error packets -----
+    protected protocol_type_e custom_chain[$];
+    protected bit              use_custom_chain = 0;
+
     // ----- Rand header pools (pre-allocated for single-call randomize) -----
     rand packet_template_e pkt_kind;
     rand pkt_category_e    pkt_rand_kind;
@@ -494,7 +498,24 @@ class packet;
     endfunction
 
     // =========================================================================
-    // post_randomize — auto-build layer_stack from pkt_kind + rand headers,
+    // set_chain — specify custom protocol chain for abnormal/error packets
+    // Overrides pkt_kind when set. Call before randomize().
+    // =========================================================================
+    function void set_chain(protocol_type_e chain[$]);
+        custom_chain     = chain;
+        use_custom_chain = 1;
+        force_mode       = 1;  // Custom chains bypass protocol graph validation
+    endfunction
+
+    // clear_chain — revert to pkt_kind template mode
+    function void clear_chain();
+        custom_chain.delete();
+        use_custom_chain = 0;
+        force_mode       = 0;
+    endfunction
+
+    // =========================================================================
+    // post_randomize — auto-build layer_stack from pkt_kind/custom_chain,
     //                  then auto do_pack() so raw_data is ready immediately
     // =========================================================================
     function void post_randomize();
@@ -503,7 +524,11 @@ class packet;
         int ipv4_idx = 0, ipv6_idx = 0, udp_idx = 0;
         bit first_eth_done = 0;
 
-        s_registry.get_chain(pkt_kind, chain);
+        // Custom chain (error packets) takes priority over pkt_kind (templates)
+        if (use_custom_chain && custom_chain.size() > 0)
+            chain = custom_chain;
+        else
+            s_registry.get_chain(pkt_kind, chain);
         layer_stack.delete();
 
         foreach (chain[i]) begin
