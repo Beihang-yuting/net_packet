@@ -4,6 +4,8 @@
 `include "protocol_base.sv"
 `include "l2/mpls_header.sv"
 `include "l3/ipv6_ext_header.sv"
+`include "l4/sctp_header.sv"
+`include "app/ptp_header.sv"
 
 program test_phase2c_headers;
 
@@ -334,6 +336,133 @@ program test_phase2c_headers;
                 protocol_base h2 = h.clone();
                 check("dest_clone: compare", h.compare(h2));
             end
+        end
+
+        // ---- SCTP: basic construction ----
+        begin
+            sctp_header s = new();
+
+            check("sctp_basic: proto_type",    s.proto_type == PROTO_SCTP);
+            check("sctp_basic: header_length", s.get_header_length() == 12);
+        end
+
+        // ---- SCTP: pack ----
+        begin
+            sctp_header s = new();
+            byte unsigned packed[$];
+
+            s.src_port         = 16'd1234;
+            s.dst_port         = 16'd5678;
+            s.verification_tag = 32'hAABBCCDD;
+            s.pack_header(packed);
+            check("sctp_pack: size", packed.size() == 12);
+        end
+
+        // ---- SCTP: unpack round-trip ----
+        begin
+            sctp_header s = new();
+            byte unsigned packed[$];
+            int offset;
+
+            s.src_port         = 16'd1234;
+            s.dst_port         = 16'd5678;
+            s.verification_tag = 32'hAABBCCDD;
+            s.checksum         = 32'h11223344;
+            s.pack_header(packed);
+
+            begin
+                sctp_header s2 = new();
+                offset = 0;
+                s2.unpack_header(packed, offset);
+                check("sctp_unpack: src_port",         s2.src_port         == 16'd1234);
+                check("sctp_unpack: dst_port",         s2.dst_port         == 16'd5678);
+                check("sctp_unpack: verification_tag", s2.verification_tag == 32'hAABBCCDD);
+                check("sctp_unpack: checksum",         s2.checksum         == 32'h11223344);
+                check("sctp_unpack: offset",           offset              == 12);
+            end
+        end
+
+        // ---- SCTP: clone+compare ----
+        begin
+            sctp_header s = new();
+            s.src_port         = 16'd1234;
+            s.dst_port         = 16'd5678;
+            s.verification_tag = 32'hAABBCCDD;
+
+            begin
+                protocol_base s2 = s.clone();
+                check("sctp_clone: compare", s.compare(s2));
+            end
+        end
+
+        // ---- PTP: basic construction ----
+        begin
+            ptp_header p = new();
+
+            check("ptp_basic: proto_type",    p.proto_type == PROTO_PTP);
+            check("ptp_basic: header_length", p.get_header_length() == 34);
+            check("ptp_basic: default version", p.version_ptp == 4'd2);
+            check("ptp_basic: default message_type", p.message_type == 4'd0);
+        end
+
+        // ---- PTP: pack ----
+        begin
+            ptp_header p = new();
+            byte unsigned packed[$];
+
+            p.message_type   = 4'd0;
+            p.domain_number  = 8'd0;
+            p.sequence_id    = 16'd100;
+            p.clock_identity = 64'h0011223344556677;
+            p.port_number    = 16'd1;
+            p.pack_header(packed);
+            check("ptp_pack: size", packed.size() == 34);
+        end
+
+        // ---- PTP: unpack round-trip ----
+        begin
+            ptp_header p = new();
+            byte unsigned packed[$];
+            int offset;
+
+            p.message_type   = 4'd0;
+            p.domain_number  = 8'd0;
+            p.sequence_id    = 16'd100;
+            p.clock_identity = 64'h0011223344556677;
+            p.port_number    = 16'd1;
+            p.pack_header(packed);
+
+            begin
+                ptp_header p2 = new();
+                offset = 0;
+                p2.unpack_header(packed, offset);
+                check("ptp_unpack: message_type",   p2.message_type   == 4'd0);
+                check("ptp_unpack: sequence_id",    p2.sequence_id    == 16'd100);
+                check("ptp_unpack: clock_identity", p2.clock_identity == 64'h0011223344556677);
+                check("ptp_unpack: port_number",    p2.port_number    == 16'd1);
+                check("ptp_unpack: offset",         offset            == 34);
+            end
+        end
+
+        // ---- PTP: clone+compare ----
+        begin
+            ptp_header p = new();
+            p.message_type   = 4'd2;
+            p.domain_number  = 8'd5;
+            p.sequence_id    = 16'd42;
+            p.clock_identity = 64'hDEADBEEFCAFEBABE;
+            p.port_number    = 16'd3;
+
+            begin
+                protocol_base p2 = p.clone();
+                check("ptp_clone: compare", p.compare(p2));
+            end
+        end
+
+        // ---- PTP: static create ----
+        begin
+            ptp_header p = ptp_header::create(.msg_type(4'd1));
+            check("ptp_create: message_type", p.message_type == 4'd1);
         end
 
         $display("=== Results: %0d passed, %0d failed ===", pass_count, fail_count);

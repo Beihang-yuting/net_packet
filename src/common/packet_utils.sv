@@ -69,6 +69,24 @@ class packet_utils;
         return val;
     endfunction
 
+    static function void pack_bytes_64(ref byte unsigned data[$], bit [63:0] val);
+        data.push_back(val[63:56]);
+        data.push_back(val[55:48]);
+        data.push_back(val[47:40]);
+        data.push_back(val[39:32]);
+        data.push_back(val[31:24]);
+        data.push_back(val[23:16]);
+        data.push_back(val[15:8]);
+        data.push_back(val[7:0]);
+    endfunction
+
+    static function bit [63:0] unpack_bytes_64(byte unsigned data[$], ref int offset);
+        bit [63:0] val = {data[offset],   data[offset+1], data[offset+2], data[offset+3],
+                          data[offset+4], data[offset+5], data[offset+6], data[offset+7]};
+        offset += 8;
+        return val;
+    endfunction
+
     static function string format_mac(bit [47:0] mac);
         return $sformatf("%02x:%02x:%02x:%02x:%02x:%02x",
                          mac[47:40], mac[39:32], mac[31:24],

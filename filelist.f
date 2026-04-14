@@ -7,6 +7,7 @@
 +incdir+src/protocols/tunnel
 +incdir+src/protocols/rdma
 +incdir+src/protocols/storage
++incdir+src/protocols/app
 +incdir+src/core
 
 src/common/packet_defines.sv
@@ -23,6 +24,7 @@ src/protocols/l4/tcp_header.sv
 src/protocols/l4/udp_header.sv
 src/protocols/l4/icmp_header.sv
 src/protocols/l4/icmpv6_header.sv
+src/protocols/l4/sctp_header.sv
 src/protocols/tunnel/vxlan_header.sv
 src/protocols/tunnel/gre_header.sv
 src/protocols/tunnel/geneve_header.sv
@@ -33,6 +35,7 @@ src/protocols/rdma/rocev2_header.sv
 src/protocols/rdma/iwarp_header.sv
 src/protocols/storage/nvme_tcp_header.sv
 src/protocols/storage/iscsi_header.sv
+src/protocols/app/ptp_header.sv
 src/core/protocol_graph.sv
 src/core/template_registry.sv
 src/core/packet.sv
