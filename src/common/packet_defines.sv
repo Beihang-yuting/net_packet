@@ -75,6 +75,8 @@ typedef enum int {
     ETH_ARP                             = 4,
     ETH_IPV4_ICMP                       = 5,
     ETH_IPV6_ICMPV6                     = 6,
+    ETH_IPV4_SCTP                       = 7,
+    ETH_IPV6_SCTP                       = 8,
     // VLAN
     ETH_VLAN_IPV4_TCP                   = 10,
     ETH_VLAN_IPV4_UDP                   = 11,
@@ -82,6 +84,10 @@ typedef enum int {
     ETH_VLAN_IPV6_UDP                   = 13,
     ETH_QINQ_IPV4_TCP                  = 14,
     ETH_QINQ_IPV4_UDP                  = 15,
+    ETH_VLAN_IPV4_ICMP                  = 16,
+    ETH_VLAN_IPV6_ICMPV6                = 17,
+    ETH_VLAN_ARP                        = 18,
+    ETH_QINQ_IPV6_TCP                   = 19,
     // Tunnel
     ETH_IPV4_UDP_VXLAN_ETH_IPV4_TCP    = 20,
     ETH_IPV4_UDP_VXLAN_ETH_IPV4_UDP    = 21,
@@ -92,17 +98,33 @@ typedef enum int {
     ETH_IPV4_GRE_ETH_IPV4_TCP          = 26,
     ETH_IPV4_GRE_ERSPAN_II_ETH_IPV4_TCP = 27,
     ETH_IPV4_UDP_GTP_U_IPV4_TCP        = 28,
+    ETH_IPV6_UDP_VXLAN_ETH_IPV4_TCP     = 29,
     // VLAN + Tunnel
     ETH_VLAN_IPV4_UDP_VXLAN_ETH_IPV4_TCP = 30,
+    ETH_VLAN_IPV4_UDP_VXLAN_ETH_IPV4_UDP = 31,
+    ETH_VLAN_IPV4_GRE_IPV4_TCP          = 32,
+    ETH_IPV4_UDP_GENEVE_ETH_IPV6_TCP    = 33,
+    ETH_IPV4_GRE_IPV6_TCP               = 34,
+    ETH_IPV6_UDP_GENEVE_ETH_IPV4_TCP    = 35,
+    ETH_IPV6_GRE_IPV4_TCP               = 36,
+    ETH_IPV4_UDP_VXLAN_GPE_ETH_IPV4_TCP = 37,
+    ETH_IPV4_UDP_VXLAN_GPE_IPV4_TCP     = 38,
+    ETH_IPV4_ESP                         = 39,
     // RDMA
     ETH_IPV4_UDP_ROCEV2                = 40,
     ETH_VLAN_IPV4_UDP_ROCEV2           = 41,
+    ETH_IPV6_UDP_ROCEV2                 = 42,
+    ETH_VLAN_IPV6_UDP_ROCEV2            = 43,
     // Storage
     ETH_IPV4_TCP_NVME_TCP              = 50,
     ETH_IPV4_UDP_ROCEV2_NVME_RDMA     = 51,
     ETH_IPV4_TCP_ISCSI                 = 52,
     // iWARP
     ETH_IPV4_TCP_IWARP                 = 53,
+    ETH_IPV6_TCP_NVME_TCP               = 54,
+    ETH_IPV6_TCP_ISCSI                  = 55,
+    ETH_VLAN_IPV4_TCP_NVME_TCP          = 56,
+    ETH_VLAN_IPV4_TCP_ISCSI             = 57,
     // Mgmt/Control
     ETH_IPV4_UDP_DHCP                  = 60,
     ETH_IPV6_UDP_DHCPV6                = 61,
@@ -117,7 +139,13 @@ typedef enum int {
     ETH_MAC_CONTROL                    = 70,
     // MPLS
     ETH_MPLS_IPV4_TCP                  = 80,
-    ETH_MPLS_IPV4_UDP                  = 81
+    ETH_MPLS_IPV4_UDP                  = 81,
+    ETH_MPLS_IPV6_TCP                   = 82,
+    ETH_MPLS_IPV6_UDP                   = 83,
+    // GTP-U
+    ETH_IPV4_UDP_GTP_U_IPV4_UDP         = 84,
+    ETH_IPV4_UDP_GTP_U_IPV6_TCP         = 85,
+    ETH_IPV6_UDP_GTP_U_IPV4_TCP         = 86
 } packet_template_e;
 
 typedef enum int {

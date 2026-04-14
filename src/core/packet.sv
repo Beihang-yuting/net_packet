@@ -134,6 +134,17 @@ class packet;
     // Usage: pkt.set_chain('{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV4, PROTO_TCP});
     // =========================================================================
     function void set_chain(protocol_type_e chain[$]);
+        // Validate against protocol graph (unless force_mode)
+        if (!force_mode) begin
+            if (!s_graph.validate_chain(chain)) begin
+                $warning("packet::set_chain: invalid protocol chain (use force_mode=1 to override)");
+                foreach (chain[i]) begin
+                    if (i > 0 && !s_graph.is_valid_next(chain[i-1], chain[i]))
+                        $warning("  invalid transition: %s -> %s at position %0d",
+                                 chain[i-1].name(), chain[i].name(), i);
+                end
+            end
+        end
         custom_chain     = chain;
         use_custom_chain = 1;
     endfunction
