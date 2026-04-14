@@ -39,7 +39,10 @@ test_tunnel_packet: test/test_tunnel_packet.sv
 test_rdma_storage_headers: test/test_rdma_storage_headers.sv
 	$(MAKE) run_rdma_storage_headers
 
-test_all: test_protocol_headers test_protocol_graph test_packet_builder test_tunnel_headers test_tunnel_packet test_rdma_storage_headers
+test_rdma_storage_packet: test/test_rdma_storage_packet.sv
+	$(MAKE) run_rdma_storage_packet
+
+test_all: test_protocol_headers test_protocol_graph test_packet_builder test_tunnel_headers test_tunnel_packet test_rdma_storage_headers test_rdma_storage_packet
 
 clean:
 	rm -rf simv_* csrc *.log *.vpd *.fsdb work transcript *.wlf DVEfiles
