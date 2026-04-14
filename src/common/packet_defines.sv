@@ -67,99 +67,195 @@ typedef enum int {
 } protocol_type_e;
 
 typedef enum int {
-    // Basic
-    ETH_IPV4_TCP                        = 0,
-    ETH_IPV4_UDP                        = 1,
-    ETH_IPV6_TCP                        = 2,
-    ETH_IPV6_UDP                        = 3,
-    ETH_ARP                             = 4,
-    ETH_IPV4_ICMP                       = 5,
-    ETH_IPV6_ICMPV6                     = 6,
-    ETH_IPV4_SCTP                       = 7,
-    ETH_IPV6_SCTP                       = 8,
-    ETH_IPV4_UDP_VXLAN_ETH_IPV6_UDP     = 9,
-    ETH_IPV6_UDP_VXLAN_ETH_IPV6_TCP     = 10,
-    ETH_IPV4_GRE_IPV6_UDP               = 11,
-    ETH_IPV6_GRE_IPV6_TCP               = 12,
-    ETH_IPV4_UDP_GENEVE_ETH_IPV4_UDP    = 13,
-    ETH_IPV6_UDP_GENEVE_ETH_IPV6_TCP    = 14,
-    ETH_IPV4_GRE_ERSPAN_III_ETH_IPV4_TCP = 15,
-    ETH_IPV6_GRE_ERSPAN_II_ETH_IPV4_TCP = 16,
-    ETH_IPV6_ESP                         = 17,
-    // Tunnel
-    ETH_IPV4_UDP_VXLAN_ETH_IPV4_TCP    = 20,
-    ETH_IPV4_UDP_VXLAN_ETH_IPV4_UDP    = 21,
-    ETH_IPV4_UDP_VXLAN_ETH_IPV6_TCP    = 22,
-    ETH_IPV4_GRE_IPV4_TCP              = 23,
-    ETH_IPV4_GRE_IPV4_UDP              = 24,
-    ETH_IPV4_UDP_GENEVE_ETH_IPV4_TCP   = 25,
-    ETH_IPV4_GRE_ETH_IPV4_TCP          = 26,
-    ETH_IPV4_GRE_ERSPAN_II_ETH_IPV4_TCP = 27,
-    ETH_IPV4_UDP_GTP_U_IPV4_TCP        = 28,
-    ETH_IPV6_UDP_VXLAN_ETH_IPV4_TCP     = 29,
-    ETH_IPV4_UDP_GENEVE_ETH_IPV6_TCP    = 33,
-    ETH_IPV4_GRE_IPV6_TCP               = 34,
-    ETH_IPV6_UDP_GENEVE_ETH_IPV4_TCP    = 35,
-    ETH_IPV6_GRE_IPV4_TCP               = 36,
-    ETH_IPV4_UDP_VXLAN_GPE_ETH_IPV4_TCP = 37,
-    ETH_IPV4_UDP_VXLAN_GPE_IPV4_TCP     = 38,
-    ETH_IPV4_ESP                         = 39,
-    // RDMA
-    ETH_IPV4_UDP_ROCEV2                = 40,
-    ETH_IPV6_UDP_ROCEV2                 = 42,
-    // Storage
-    ETH_IPV4_TCP_NVME_TCP              = 50,
-    ETH_IPV4_UDP_ROCEV2_NVME_RDMA     = 51,
-    ETH_IPV4_TCP_ISCSI                 = 52,
-    // iWARP
-    ETH_IPV4_TCP_IWARP                 = 53,
-    ETH_IPV6_TCP_NVME_TCP               = 54,
-    ETH_IPV6_TCP_ISCSI                  = 55,
-    ETH_IPV6_TCP_IWARP                  = 56,
+    // =========================================================
+    // Basic: ETH + L3 + L4 (no tunnel)
+    // =========================================================
+    ETH_IPV4_TCP                            = 0,
+    ETH_IPV4_UDP                            = 1,
+    ETH_IPV4_ICMP                           = 2,
+    ETH_IPV4_SCTP                           = 3,
+    ETH_IPV6_TCP                            = 4,
+    ETH_IPV6_UDP                            = 5,
+    ETH_IPV6_ICMPV6                         = 6,
+    ETH_IPV6_SCTP                           = 7,
+    ETH_ARP                                 = 8,
+    ETH_IGMP                                = 9,
+
+    // =========================================================
+    // MPLS: ETH + MPLS + L3 + L4
+    // =========================================================
+    ETH_MPLS_IPV4_TCP                       = 10,
+    ETH_MPLS_IPV4_UDP                       = 11,
+    ETH_MPLS_IPV4_ICMP                      = 12,
+    ETH_MPLS_IPV4_SCTP                      = 13,
+    ETH_MPLS_IPV6_TCP                       = 14,
+    ETH_MPLS_IPV6_UDP                       = 15,
+    ETH_MPLS_IPV6_ICMPV6                    = 16,
+    ETH_MPLS_IPV6_SCTP                      = 17,
+
+    // =========================================================
+    // IPsec ESP: ETH + L3 + ESP
+    // =========================================================
+    ETH_IPV4_ESP                            = 18,
+    ETH_IPV6_ESP                            = 19,
+
+    // =========================================================
+    // VXLAN: ETH + outer_L3 + UDP + VXLAN + ETH + inner_L3 + inner_L4
+    // =========================================================
+    // Outer IPv4
+    ETH_IPV4_UDP_VXLAN_ETH_IPV4_TCP         = 20,
+    ETH_IPV4_UDP_VXLAN_ETH_IPV4_UDP         = 21,
+    ETH_IPV4_UDP_VXLAN_ETH_IPV6_TCP         = 22,
+    ETH_IPV4_UDP_VXLAN_ETH_IPV6_UDP         = 23,
+    // Outer IPv6
+    ETH_IPV6_UDP_VXLAN_ETH_IPV4_TCP         = 24,
+    ETH_IPV6_UDP_VXLAN_ETH_IPV4_UDP         = 25,
+    ETH_IPV6_UDP_VXLAN_ETH_IPV6_TCP         = 26,
+    ETH_IPV6_UDP_VXLAN_ETH_IPV6_UDP         = 27,
+
+    // =========================================================
+    // Geneve: ETH + outer_L3 + UDP + Geneve + ETH + inner_L3 + inner_L4
+    // =========================================================
+    // Outer IPv4
+    ETH_IPV4_UDP_GENEVE_ETH_IPV4_TCP        = 30,
+    ETH_IPV4_UDP_GENEVE_ETH_IPV4_UDP        = 31,
+    ETH_IPV4_UDP_GENEVE_ETH_IPV6_TCP        = 32,
+    ETH_IPV4_UDP_GENEVE_ETH_IPV6_UDP        = 33,
+    // Outer IPv6
+    ETH_IPV6_UDP_GENEVE_ETH_IPV4_TCP        = 34,
+    ETH_IPV6_UDP_GENEVE_ETH_IPV4_UDP        = 35,
+    ETH_IPV6_UDP_GENEVE_ETH_IPV6_TCP        = 36,
+    ETH_IPV6_UDP_GENEVE_ETH_IPV6_UDP        = 37,
+
+    // =========================================================
+    // GRE L3: ETH + outer_L3 + GRE + inner_L3 + inner_L4 (no inner ETH)
+    // =========================================================
+    // Outer IPv4
+    ETH_IPV4_GRE_IPV4_TCP                   = 40,
+    ETH_IPV4_GRE_IPV4_UDP                   = 41,
+    ETH_IPV4_GRE_IPV6_TCP                   = 42,
+    ETH_IPV4_GRE_IPV6_UDP                   = 43,
+    // Outer IPv6
+    ETH_IPV6_GRE_IPV4_TCP                   = 44,
+    ETH_IPV6_GRE_IPV4_UDP                   = 45,
+    ETH_IPV6_GRE_IPV6_TCP                   = 46,
+    ETH_IPV6_GRE_IPV6_UDP                   = 47,
+
+    // =========================================================
+    // NVGRE (GRE L2): ETH + outer_L3 + GRE + ETH + inner_L3 + inner_L4
+    // =========================================================
+    // Outer IPv4
+    ETH_IPV4_GRE_ETH_IPV4_TCP               = 50,
+    ETH_IPV4_GRE_ETH_IPV4_UDP               = 51,
+    ETH_IPV4_GRE_ETH_IPV6_TCP               = 52,
+    ETH_IPV4_GRE_ETH_IPV6_UDP               = 53,
+    // Outer IPv6
+    ETH_IPV6_GRE_ETH_IPV4_TCP               = 54,
+    ETH_IPV6_GRE_ETH_IPV4_UDP               = 55,
+    ETH_IPV6_GRE_ETH_IPV6_TCP               = 56,
+    ETH_IPV6_GRE_ETH_IPV6_UDP               = 57,
+
+    // =========================================================
+    // GTP-U: ETH + outer_L3 + UDP + GTP-U + inner_L3 + inner_L4
+    // =========================================================
+    // Outer IPv4
+    ETH_IPV4_UDP_GTP_U_IPV4_TCP             = 60,
+    ETH_IPV4_UDP_GTP_U_IPV4_UDP             = 61,
+    ETH_IPV4_UDP_GTP_U_IPV6_TCP             = 62,
+    ETH_IPV4_UDP_GTP_U_IPV6_UDP             = 63,
+    // Outer IPv6
+    ETH_IPV6_UDP_GTP_U_IPV4_TCP             = 64,
+    ETH_IPV6_UDP_GTP_U_IPV4_UDP             = 65,
+    ETH_IPV6_UDP_GTP_U_IPV6_TCP             = 66,
+    ETH_IPV6_UDP_GTP_U_IPV6_UDP             = 67,
+
+    // =========================================================
+    // ERSPAN: ETH + outer_L3 + GRE + ERSPAN + ETH + inner_L3 + inner_L4
+    // =========================================================
+    // ERSPAN Type II
+    ETH_IPV4_GRE_ERSPAN_II_ETH_IPV4_TCP     = 70,
+    ETH_IPV4_GRE_ERSPAN_II_ETH_IPV4_UDP     = 71,
+    ETH_IPV6_GRE_ERSPAN_II_ETH_IPV4_TCP     = 72,
+    ETH_IPV6_GRE_ERSPAN_II_ETH_IPV4_UDP     = 73,
+    // ERSPAN Type III
+    ETH_IPV4_GRE_ERSPAN_III_ETH_IPV4_TCP    = 74,
+    ETH_IPV4_GRE_ERSPAN_III_ETH_IPV4_UDP    = 75,
+    ETH_IPV6_GRE_ERSPAN_III_ETH_IPV4_TCP    = 76,
+    ETH_IPV6_GRE_ERSPAN_III_ETH_IPV4_UDP    = 77,
+
+    // =========================================================
+    // VXLAN-GPE: ETH + outer_L3 + UDP + VXLAN-GPE + [ETH] + inner_L3 + inner_L4
+    // =========================================================
+    // With inner ETH (L2 mode)
+    ETH_IPV4_UDP_VXLAN_GPE_ETH_IPV4_TCP     = 80,
+    ETH_IPV4_UDP_VXLAN_GPE_ETH_IPV4_UDP     = 81,
+    ETH_IPV6_UDP_VXLAN_GPE_ETH_IPV4_TCP     = 82,
+    // Without inner ETH (L3 mode)
+    ETH_IPV4_UDP_VXLAN_GPE_IPV4_TCP         = 83,
+    ETH_IPV4_UDP_VXLAN_GPE_IPV6_TCP         = 84,
+
+    // =========================================================
+    // RDMA: ETH + L3 + UDP + RoCEv2 [+ NVMe-RDMA]
+    // =========================================================
+    ETH_IPV4_UDP_ROCEV2                      = 90,
+    ETH_IPV6_UDP_ROCEV2                      = 91,
+    ETH_IPV4_UDP_ROCEV2_NVME_RDMA            = 92,
+    ETH_IPV6_UDP_ROCEV2_NVME_RDMA            = 93,
+
+    // =========================================================
+    // Storage over TCP: ETH + L3 + TCP + {NVMe-TCP, iSCSI, iWARP}
+    // =========================================================
+    ETH_IPV4_TCP_NVME_TCP                    = 100,
+    ETH_IPV6_TCP_NVME_TCP                    = 101,
+    ETH_IPV4_TCP_ISCSI                       = 102,
+    ETH_IPV6_TCP_ISCSI                       = 103,
+    ETH_IPV4_TCP_IWARP                       = 104,
+    ETH_IPV6_TCP_IWARP                       = 105,
+
+    // =========================================================
     // Mgmt/Control
-    ETH_IPV4_UDP_DHCP                  = 60,
-    ETH_IPV6_UDP_DHCPV6                = 61,
-    ETH_IPV4_UDP_DNS                   = 62,
-    ETH_IPV4_UDP_BFD                   = 63,
-    ETH_IPV4_UDP_PTP                   = 64,
-    ETH_PTP_L2                         = 65,
-    ETH_IGMP                           = 66,
-    ETH_LLDP                           = 67,
-    ETH_LACP                           = 68,
-    ETH_STP                            = 69,
-    ETH_MAC_CONTROL                    = 70,
-    // MPLS
-    ETH_MPLS_IPV4_TCP                  = 80,
-    ETH_MPLS_IPV4_UDP                  = 81,
-    ETH_MPLS_IPV6_TCP                   = 82,
-    ETH_MPLS_IPV6_UDP                   = 83,
-    // GTP-U
-    ETH_IPV4_UDP_GTP_U_IPV4_UDP         = 84,
-    ETH_IPV4_UDP_GTP_U_IPV6_TCP         = 85,
-    ETH_IPV6_UDP_GTP_U_IPV4_TCP         = 86,
-    ETH_IPV6_UDP_GTP_U_IPV6_TCP         = 87
+    // =========================================================
+    ETH_IPV4_UDP_DHCP                        = 110,
+    ETH_IPV6_UDP_DHCPV6                      = 111,
+    ETH_IPV4_UDP_DNS                         = 112,
+    ETH_IPV4_UDP_BFD                         = 113,
+    ETH_IPV4_UDP_PTP                         = 114,
+    ETH_PTP_L2                               = 115,
+    ETH_LLDP                                 = 116,
+    ETH_LACP                                 = 117,
+    ETH_STP                                  = 118,
+    ETH_MAC_CONTROL                          = 119
 } packet_template_e;
 
 typedef enum int {
-    PKT_CAT_ALL      = 0,   // Any template
-    PKT_CAT_BASIC    = 1,   // Non-tunnel basic packets (ETH+L3+L4)
-    PKT_CAT_TCP      = 2,   // All templates containing TCP
-    PKT_CAT_UDP      = 3,   // All templates containing UDP
-    PKT_CAT_ICMP     = 4,   // ICMP and ICMPv6
-    PKT_CAT_SCTP     = 5,   // All SCTP templates
-    PKT_CAT_IPV4     = 6,   // All templates with outer IPv4
-    PKT_CAT_IPV6     = 7,   // All templates with outer IPv6
-    PKT_CAT_TUNNEL   = 8,   // All tunnel templates (VXLAN/GRE/Geneve/GTP-U/ERSPAN/VXLAN-GPE)
-    PKT_CAT_VXLAN    = 9,   // VXLAN tunnel templates
-    PKT_CAT_GRE      = 10,  // GRE tunnel templates
-    PKT_CAT_GENEVE   = 11,  // Geneve tunnel templates
-    PKT_CAT_GTP      = 12,  // GTP-U tunnel templates
-    PKT_CAT_ERSPAN   = 13,  // ERSPAN templates
-    PKT_CAT_ROCEV2   = 14,  // RoCEv2 RDMA templates
-    PKT_CAT_STORAGE  = 15,  // NVMe-TCP + iSCSI + NVMe-RDMA
-    PKT_CAT_MPLS     = 16,  // MPLS templates
-    PKT_CAT_MGMT     = 17,  // Management/control protocols
-    PKT_CAT_ESP      = 18   // IPsec ESP templates
+    PKT_CAT_ALL           = 0,
+    PKT_CAT_BASIC         = 1,
+    // L4 categories
+    PKT_CAT_TCP           = 2,
+    PKT_CAT_UDP           = 3,
+    PKT_CAT_ICMP          = 4,
+    PKT_CAT_SCTP          = 5,
+    // L3 categories (outer)
+    PKT_CAT_OUTER_IPV4    = 6,
+    PKT_CAT_OUTER_IPV6    = 7,
+    // L3 categories (inner, tunnel only)
+    PKT_CAT_INNER_IPV4    = 8,
+    PKT_CAT_INNER_IPV6    = 9,
+    // Tunnel categories
+    PKT_CAT_TUNNEL        = 10,
+    PKT_CAT_VXLAN         = 11,
+    PKT_CAT_GRE           = 12,
+    PKT_CAT_GENEVE        = 13,
+    PKT_CAT_GTP           = 14,
+    PKT_CAT_ERSPAN        = 15,
+    PKT_CAT_NVGRE         = 16,
+    // Application categories
+    PKT_CAT_ROCEV2        = 17,
+    PKT_CAT_STORAGE       = 18,
+    PKT_CAT_MPLS          = 19,
+    PKT_CAT_MGMT          = 20,
+    PKT_CAT_ESP           = 21,
+    PKT_CAT_VXLAN_GPE     = 22
 } pkt_category_e;
 
 typedef enum int {
