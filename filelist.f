@@ -12,6 +12,7 @@
 +incdir+src/parser
 +incdir+src/pcap
 +incdir+src/sequence
++incdir+src/stream
 
 src/common/packet_defines.sv
 src/common/packet_utils.sv
@@ -54,3 +55,5 @@ src/sequence/tcp_sequences.sv
 src/sequence/arp_sequence.sv
 src/sequence/icmp_sequence.sv
 src/sequence/ptp_sequence.sv
+src/stream/field_modifier.sv
+src/stream/traffic_stream.sv
