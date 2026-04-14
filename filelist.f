@@ -10,6 +10,7 @@
 +incdir+src/protocols/app
 +incdir+src/core
 +incdir+src/parser
++incdir+src/pcap
 
 src/common/packet_defines.sv
 src/common/packet_utils.sv
@@ -44,3 +45,5 @@ src/core/template_registry.sv
 src/core/packet.sv
 src/parser/protocol_parser.sv
 src/parser/packet_comparator.sv
+src/pcap/pcap_writer.sv
+src/pcap/pcap_reader.sv
