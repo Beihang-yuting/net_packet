@@ -13,6 +13,7 @@
 +incdir+src/pcap
 +incdir+src/sequence
 +incdir+src/stream
++incdir+src/uvm_wrapper
 
 src/common/packet_defines.sv
 src/common/packet_utils.sv
@@ -57,3 +58,6 @@ src/sequence/icmp_sequence.sv
 src/sequence/ptp_sequence.sv
 src/stream/field_modifier.sv
 src/stream/traffic_stream.sv
+src/uvm_wrapper/packet_item.sv
+src/uvm_wrapper/packet_sequence.sv
+src/uvm_wrapper/protocol_seq_wrapper.sv
