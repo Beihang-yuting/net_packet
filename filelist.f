@@ -27,6 +27,7 @@ src/protocols/tunnel/erspan_header.sv
 src/protocols/tunnel/gtp_header.sv
 src/protocols/tunnel/ip_in_ip_header.sv
 src/protocols/rdma/rocev2_header.sv
+src/protocols/rdma/iwarp_header.sv
 src/core/protocol_graph.sv
 src/core/template_registry.sv
 src/core/packet.sv

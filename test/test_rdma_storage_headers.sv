@@ -3,6 +3,7 @@
 `include "packet_utils.sv"
 `include "protocol_base.sv"
 `include "rdma/rocev2_header.sv"
+`include "rdma/iwarp_header.sv"
 
 program test_rdma_storage_headers;
 
@@ -201,6 +202,73 @@ program test_rdma_storage_headers;
             check("bth_cnp: no immdt", bth.has_immdt() == 0);
             bth.icrc_enable = 0;
             check("bth_cnp: header_length", bth.get_header_length() == 12);
+        end
+
+        // ---- iWARP: basic construction ----
+        begin
+            iwarp_header iw = new();
+
+            check("iwarp_basic: proto_type",    iw.proto_type    == PROTO_IWARP);
+            check("iwarp_basic: header_length", iw.get_header_length() == 28);
+            check("iwarp_basic: ddp_version",   iw.ddp_version   == 8'd1);
+            check("iwarp_basic: rdmap_version", iw.rdmap_version == 4'd1);
+        end
+
+        // ---- iWARP: pack ----
+        begin
+            iwarp_header iw = new();
+            byte unsigned packed[$];
+
+            iw.rdmap_opcode = 4'd1;
+            iw.queue_number = 16'd5;
+            iw.msn          = 32'h100;
+            iw.sink_stag    = 32'hAABBCCDD;
+            iw.pack_header(packed);
+            check("iwarp_pack: size", packed.size() == 28);
+        end
+
+        // ---- iWARP: unpack round-trip ----
+        begin
+            iwarp_header iw = new();
+            byte unsigned packed[$];
+            int offset;
+
+            iw.rdmap_opcode = 4'd1;
+            iw.queue_number = 16'd5;
+            iw.msn          = 32'h100;
+            iw.sink_stag    = 32'hAABBCCDD;
+            iw.pack_header(packed);
+
+            begin
+                iwarp_header iw2 = new();
+                offset = 0;
+                iw2.unpack_header(packed, offset);
+                check("iwarp_unpack: rdmap_opcode", iw2.rdmap_opcode == 4'd1);
+                check("iwarp_unpack: queue_number", iw2.queue_number == 16'd5);
+                check("iwarp_unpack: msn",          iw2.msn          == 32'h100);
+                check("iwarp_unpack: sink_stag",    iw2.sink_stag    == 32'hAABBCCDD);
+                check("iwarp_unpack: offset",       offset == 28);
+            end
+        end
+
+        // ---- iWARP: clone+compare ----
+        begin
+            iwarp_header iw = new();
+            iw.rdmap_opcode = 4'd1;
+            iw.queue_number = 16'd5;
+            iw.msn          = 32'h100;
+            iw.sink_stag    = 32'hAABBCCDD;
+
+            begin
+                protocol_base iw2 = iw.clone();
+                check("iwarp_clone: compare", iw.compare(iw2));
+            end
+        end
+
+        // ---- iWARP: static create ----
+        begin
+            iwarp_header iw = iwarp_header::create(4'd2);
+            check("iwarp_create: rdmap_opcode", iw.rdmap_opcode == 4'd2);
         end
 
         $display("=== Results: %0d passed, %0d failed ===", pass_count, fail_count);
