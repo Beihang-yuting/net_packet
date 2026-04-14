@@ -50,6 +50,7 @@ class packet;
 
     // ----- Rand header pools (pre-allocated for single-call randomize) -----
     rand packet_template_e pkt_kind;
+    rand pkt_category_e    pkt_rand_kind;
     rand int unsigned      pkt_length_rand;
 
     // L2: outer/inner for tunnel scenarios; non-tunnel uses outer_xxx
@@ -97,6 +98,173 @@ class packet;
         outer_vlan_num inside {[0:4]};
         soft inner_vlan_num == 0;
         inner_vlan_num inside {[0:4]};
+    }
+
+    constraint c_pkt_category {
+        soft pkt_rand_kind == PKT_CAT_ALL;
+
+        if (pkt_rand_kind == PKT_CAT_ALL) {
+            // No additional constraint — any pkt_kind is valid
+        }
+
+        if (pkt_rand_kind == PKT_CAT_BASIC) {
+            pkt_kind inside {ETH_IPV4_TCP, ETH_IPV4_UDP, ETH_IPV6_TCP, ETH_IPV6_UDP,
+                             ETH_ARP, ETH_IPV4_ICMP, ETH_IPV6_ICMPV6,
+                             ETH_IPV4_SCTP, ETH_IPV6_SCTP};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_TCP) {
+            pkt_kind inside {ETH_IPV4_TCP, ETH_IPV6_TCP,
+                             ETH_IPV4_UDP_VXLAN_ETH_IPV4_TCP, ETH_IPV4_UDP_VXLAN_ETH_IPV6_TCP,
+                             ETH_IPV6_UDP_VXLAN_ETH_IPV4_TCP, ETH_IPV6_UDP_VXLAN_ETH_IPV6_TCP,
+                             ETH_IPV4_GRE_IPV4_TCP, ETH_IPV4_GRE_IPV6_TCP,
+                             ETH_IPV4_GRE_ETH_IPV4_TCP,
+                             ETH_IPV6_GRE_IPV4_TCP, ETH_IPV6_GRE_IPV6_TCP,
+                             ETH_IPV4_UDP_GENEVE_ETH_IPV4_TCP, ETH_IPV4_UDP_GENEVE_ETH_IPV6_TCP,
+                             ETH_IPV6_UDP_GENEVE_ETH_IPV4_TCP, ETH_IPV6_UDP_GENEVE_ETH_IPV6_TCP,
+                             ETH_IPV4_GRE_ERSPAN_II_ETH_IPV4_TCP,
+                             ETH_IPV4_GRE_ERSPAN_III_ETH_IPV4_TCP,
+                             ETH_IPV6_GRE_ERSPAN_II_ETH_IPV4_TCP,
+                             ETH_IPV4_UDP_GTP_U_IPV4_TCP, ETH_IPV4_UDP_GTP_U_IPV6_TCP,
+                             ETH_IPV6_UDP_GTP_U_IPV4_TCP, ETH_IPV6_UDP_GTP_U_IPV6_TCP,
+                             ETH_IPV4_UDP_VXLAN_GPE_ETH_IPV4_TCP,
+                             ETH_IPV4_TCP_NVME_TCP, ETH_IPV6_TCP_NVME_TCP,
+                             ETH_IPV4_TCP_ISCSI, ETH_IPV6_TCP_ISCSI,
+                             ETH_IPV4_TCP_IWARP, ETH_IPV6_TCP_IWARP,
+                             ETH_MPLS_IPV4_TCP, ETH_MPLS_IPV6_TCP};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_UDP) {
+            pkt_kind inside {ETH_IPV4_UDP, ETH_IPV6_UDP,
+                             ETH_IPV4_UDP_VXLAN_ETH_IPV4_UDP, ETH_IPV4_UDP_VXLAN_ETH_IPV6_UDP,
+                             ETH_IPV4_GRE_IPV4_UDP, ETH_IPV4_GRE_IPV6_UDP,
+                             ETH_IPV4_UDP_GENEVE_ETH_IPV4_UDP,
+                             ETH_IPV4_UDP_GTP_U_IPV4_UDP,
+                             ETH_IPV4_UDP_ROCEV2, ETH_IPV6_UDP_ROCEV2,
+                             ETH_IPV4_UDP_ROCEV2_NVME_RDMA,
+                             ETH_IPV4_UDP_DHCP, ETH_IPV6_UDP_DHCPV6,
+                             ETH_IPV4_UDP_DNS, ETH_IPV4_UDP_BFD, ETH_IPV4_UDP_PTP,
+                             ETH_MPLS_IPV4_UDP, ETH_MPLS_IPV6_UDP};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_ICMP) {
+            pkt_kind inside {ETH_IPV4_ICMP, ETH_IPV6_ICMPV6};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_SCTP) {
+            pkt_kind inside {ETH_IPV4_SCTP, ETH_IPV6_SCTP};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_IPV4) {
+            pkt_kind inside {ETH_IPV4_TCP, ETH_IPV4_UDP, ETH_IPV4_ICMP, ETH_IPV4_SCTP,
+                             ETH_IPV4_UDP_VXLAN_ETH_IPV4_TCP, ETH_IPV4_UDP_VXLAN_ETH_IPV4_UDP,
+                             ETH_IPV4_UDP_VXLAN_ETH_IPV6_TCP, ETH_IPV4_UDP_VXLAN_ETH_IPV6_UDP,
+                             ETH_IPV4_GRE_IPV4_TCP, ETH_IPV4_GRE_IPV4_UDP,
+                             ETH_IPV4_GRE_IPV6_TCP, ETH_IPV4_GRE_IPV6_UDP,
+                             ETH_IPV4_GRE_ETH_IPV4_TCP,
+                             ETH_IPV4_UDP_GENEVE_ETH_IPV4_TCP, ETH_IPV4_UDP_GENEVE_ETH_IPV6_TCP,
+                             ETH_IPV4_UDP_GENEVE_ETH_IPV4_UDP,
+                             ETH_IPV4_GRE_ERSPAN_II_ETH_IPV4_TCP,
+                             ETH_IPV4_GRE_ERSPAN_III_ETH_IPV4_TCP,
+                             ETH_IPV4_UDP_GTP_U_IPV4_TCP, ETH_IPV4_UDP_GTP_U_IPV4_UDP,
+                             ETH_IPV4_UDP_GTP_U_IPV6_TCP,
+                             ETH_IPV4_UDP_VXLAN_GPE_ETH_IPV4_TCP, ETH_IPV4_UDP_VXLAN_GPE_IPV4_TCP,
+                             ETH_IPV4_ESP,
+                             ETH_IPV4_UDP_ROCEV2, ETH_IPV4_UDP_ROCEV2_NVME_RDMA,
+                             ETH_IPV4_TCP_NVME_TCP, ETH_IPV4_TCP_ISCSI, ETH_IPV4_TCP_IWARP,
+                             ETH_IPV4_UDP_DHCP, ETH_IPV4_UDP_DNS, ETH_IPV4_UDP_BFD, ETH_IPV4_UDP_PTP,
+                             ETH_IGMP};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_IPV6) {
+            pkt_kind inside {ETH_IPV6_TCP, ETH_IPV6_UDP, ETH_IPV6_ICMPV6, ETH_IPV6_SCTP,
+                             ETH_IPV6_UDP_VXLAN_ETH_IPV4_TCP, ETH_IPV6_UDP_VXLAN_ETH_IPV6_TCP,
+                             ETH_IPV6_GRE_IPV4_TCP, ETH_IPV6_GRE_IPV6_TCP,
+                             ETH_IPV6_UDP_GENEVE_ETH_IPV4_TCP, ETH_IPV6_UDP_GENEVE_ETH_IPV6_TCP,
+                             ETH_IPV6_GRE_ERSPAN_II_ETH_IPV4_TCP,
+                             ETH_IPV6_UDP_GTP_U_IPV4_TCP, ETH_IPV6_UDP_GTP_U_IPV6_TCP,
+                             ETH_IPV6_ESP,
+                             ETH_IPV6_UDP_ROCEV2,
+                             ETH_IPV6_TCP_NVME_TCP, ETH_IPV6_TCP_ISCSI, ETH_IPV6_TCP_IWARP,
+                             ETH_IPV6_UDP_DHCPV6};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_TUNNEL) {
+            pkt_kind inside {ETH_IPV4_UDP_VXLAN_ETH_IPV4_TCP, ETH_IPV4_UDP_VXLAN_ETH_IPV4_UDP,
+                             ETH_IPV4_UDP_VXLAN_ETH_IPV6_TCP, ETH_IPV4_UDP_VXLAN_ETH_IPV6_UDP,
+                             ETH_IPV6_UDP_VXLAN_ETH_IPV4_TCP, ETH_IPV6_UDP_VXLAN_ETH_IPV6_TCP,
+                             ETH_IPV4_GRE_IPV4_TCP, ETH_IPV4_GRE_IPV4_UDP,
+                             ETH_IPV4_GRE_IPV6_TCP, ETH_IPV4_GRE_IPV6_UDP,
+                             ETH_IPV4_GRE_ETH_IPV4_TCP,
+                             ETH_IPV6_GRE_IPV4_TCP, ETH_IPV6_GRE_IPV6_TCP,
+                             ETH_IPV4_UDP_GENEVE_ETH_IPV4_TCP, ETH_IPV4_UDP_GENEVE_ETH_IPV6_TCP,
+                             ETH_IPV4_UDP_GENEVE_ETH_IPV4_UDP,
+                             ETH_IPV6_UDP_GENEVE_ETH_IPV4_TCP, ETH_IPV6_UDP_GENEVE_ETH_IPV6_TCP,
+                             ETH_IPV4_GRE_ERSPAN_II_ETH_IPV4_TCP, ETH_IPV4_GRE_ERSPAN_III_ETH_IPV4_TCP,
+                             ETH_IPV6_GRE_ERSPAN_II_ETH_IPV4_TCP,
+                             ETH_IPV4_UDP_GTP_U_IPV4_TCP, ETH_IPV4_UDP_GTP_U_IPV4_UDP,
+                             ETH_IPV4_UDP_GTP_U_IPV6_TCP,
+                             ETH_IPV6_UDP_GTP_U_IPV4_TCP, ETH_IPV6_UDP_GTP_U_IPV6_TCP,
+                             ETH_IPV4_UDP_VXLAN_GPE_ETH_IPV4_TCP, ETH_IPV4_UDP_VXLAN_GPE_IPV4_TCP};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_VXLAN) {
+            pkt_kind inside {ETH_IPV4_UDP_VXLAN_ETH_IPV4_TCP, ETH_IPV4_UDP_VXLAN_ETH_IPV4_UDP,
+                             ETH_IPV4_UDP_VXLAN_ETH_IPV6_TCP, ETH_IPV4_UDP_VXLAN_ETH_IPV6_UDP,
+                             ETH_IPV6_UDP_VXLAN_ETH_IPV4_TCP, ETH_IPV6_UDP_VXLAN_ETH_IPV6_TCP};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_GRE) {
+            pkt_kind inside {ETH_IPV4_GRE_IPV4_TCP, ETH_IPV4_GRE_IPV4_UDP,
+                             ETH_IPV4_GRE_IPV6_TCP, ETH_IPV4_GRE_IPV6_UDP,
+                             ETH_IPV4_GRE_ETH_IPV4_TCP,
+                             ETH_IPV6_GRE_IPV4_TCP, ETH_IPV6_GRE_IPV6_TCP};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_GENEVE) {
+            pkt_kind inside {ETH_IPV4_UDP_GENEVE_ETH_IPV4_TCP, ETH_IPV4_UDP_GENEVE_ETH_IPV6_TCP,
+                             ETH_IPV4_UDP_GENEVE_ETH_IPV4_UDP,
+                             ETH_IPV6_UDP_GENEVE_ETH_IPV4_TCP, ETH_IPV6_UDP_GENEVE_ETH_IPV6_TCP};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_GTP) {
+            pkt_kind inside {ETH_IPV4_UDP_GTP_U_IPV4_TCP, ETH_IPV4_UDP_GTP_U_IPV4_UDP,
+                             ETH_IPV4_UDP_GTP_U_IPV6_TCP,
+                             ETH_IPV6_UDP_GTP_U_IPV4_TCP, ETH_IPV6_UDP_GTP_U_IPV6_TCP};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_ERSPAN) {
+            pkt_kind inside {ETH_IPV4_GRE_ERSPAN_II_ETH_IPV4_TCP,
+                             ETH_IPV4_GRE_ERSPAN_III_ETH_IPV4_TCP,
+                             ETH_IPV6_GRE_ERSPAN_II_ETH_IPV4_TCP};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_ROCEV2) {
+            pkt_kind inside {ETH_IPV4_UDP_ROCEV2, ETH_IPV6_UDP_ROCEV2,
+                             ETH_IPV4_UDP_ROCEV2_NVME_RDMA};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_STORAGE) {
+            pkt_kind inside {ETH_IPV4_TCP_NVME_TCP, ETH_IPV6_TCP_NVME_TCP,
+                             ETH_IPV4_TCP_ISCSI, ETH_IPV6_TCP_ISCSI,
+                             ETH_IPV4_TCP_IWARP, ETH_IPV6_TCP_IWARP,
+                             ETH_IPV4_UDP_ROCEV2_NVME_RDMA};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_MPLS) {
+            pkt_kind inside {ETH_MPLS_IPV4_TCP, ETH_MPLS_IPV4_UDP,
+                             ETH_MPLS_IPV6_TCP, ETH_MPLS_IPV6_UDP};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_MGMT) {
+            pkt_kind inside {ETH_IPV4_UDP_DHCP, ETH_IPV6_UDP_DHCPV6,
+                             ETH_IPV4_UDP_DNS, ETH_IPV4_UDP_BFD, ETH_IPV4_UDP_PTP,
+                             ETH_PTP_L2, ETH_IGMP, ETH_LLDP, ETH_LACP, ETH_STP, ETH_MAC_CONTROL};
+        }
+
+        if (pkt_rand_kind == PKT_CAT_ESP) {
+            pkt_kind inside {ETH_IPV4_ESP, ETH_IPV6_ESP};
+        }
     }
 
     // ----- Shared static instances -----

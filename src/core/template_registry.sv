@@ -78,6 +78,42 @@ class template_registry;
         c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_VXLAN, PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP};
         register_template(ETH_IPV4_UDP_VXLAN_ETH_IPV6_TCP, c);
 
+        // ETH_IPV4_UDP_VXLAN_ETH_IPV6_UDP = 9
+        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_VXLAN, PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP};
+        register_template(ETH_IPV4_UDP_VXLAN_ETH_IPV6_UDP, c);
+
+        // ETH_IPV6_UDP_VXLAN_ETH_IPV6_TCP = 10
+        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_VXLAN, PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP};
+        register_template(ETH_IPV6_UDP_VXLAN_ETH_IPV6_TCP, c);
+
+        // ETH_IPV4_GRE_IPV6_UDP = 11
+        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_GRE, PROTO_IPV6, PROTO_UDP};
+        register_template(ETH_IPV4_GRE_IPV6_UDP, c);
+
+        // ETH_IPV6_GRE_IPV6_TCP = 12
+        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_GRE, PROTO_IPV6, PROTO_TCP};
+        register_template(ETH_IPV6_GRE_IPV6_TCP, c);
+
+        // ETH_IPV4_UDP_GENEVE_ETH_IPV4_UDP = 13
+        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_GENEVE, PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP};
+        register_template(ETH_IPV4_UDP_GENEVE_ETH_IPV4_UDP, c);
+
+        // ETH_IPV6_UDP_GENEVE_ETH_IPV6_TCP = 14
+        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_GENEVE, PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP};
+        register_template(ETH_IPV6_UDP_GENEVE_ETH_IPV6_TCP, c);
+
+        // ETH_IPV4_GRE_ERSPAN_III_ETH_IPV4_TCP = 15
+        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_GRE, PROTO_ERSPAN_III, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
+        register_template(ETH_IPV4_GRE_ERSPAN_III_ETH_IPV4_TCP, c);
+
+        // ETH_IPV6_GRE_ERSPAN_II_ETH_IPV4_TCP = 16
+        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_GRE, PROTO_ERSPAN_II, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
+        register_template(ETH_IPV6_GRE_ERSPAN_II_ETH_IPV4_TCP, c);
+
+        // ETH_IPV6_ESP = 17
+        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_ESP};
+        register_template(ETH_IPV6_ESP, c);
+
         // ETH_IPV4_GRE_IPV4_TCP = 23
         c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_GRE, PROTO_IPV4, PROTO_TCP};
         register_template(ETH_IPV4_GRE_IPV4_TCP, c);
@@ -170,6 +206,10 @@ class template_registry;
         c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP, PROTO_ISCSI};
         register_template(ETH_IPV6_TCP_ISCSI, c);
 
+        // ETH_IPV6_TCP_IWARP = 56
+        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP, PROTO_IWARP};
+        register_template(ETH_IPV6_TCP_IWARP, c);
+
         // --- Mgmt/Control ---
 
         // ETH_IPV4_UDP_DHCP = 60
@@ -247,6 +287,10 @@ class template_registry;
         // ETH_IPV6_UDP_GTP_U_IPV4_TCP = 86
         c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_GTP_U, PROTO_IPV4, PROTO_TCP};
         register_template(ETH_IPV6_UDP_GTP_U_IPV4_TCP, c);
+
+        // ETH_IPV6_UDP_GTP_U_IPV6_TCP = 87
+        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_GTP_U, PROTO_IPV6, PROTO_TCP};
+        register_template(ETH_IPV6_UDP_GTP_U_IPV6_TCP, c);
 
     endfunction
 

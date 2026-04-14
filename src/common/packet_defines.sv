@@ -77,6 +77,15 @@ typedef enum int {
     ETH_IPV6_ICMPV6                     = 6,
     ETH_IPV4_SCTP                       = 7,
     ETH_IPV6_SCTP                       = 8,
+    ETH_IPV4_UDP_VXLAN_ETH_IPV6_UDP     = 9,
+    ETH_IPV6_UDP_VXLAN_ETH_IPV6_TCP     = 10,
+    ETH_IPV4_GRE_IPV6_UDP               = 11,
+    ETH_IPV6_GRE_IPV6_TCP               = 12,
+    ETH_IPV4_UDP_GENEVE_ETH_IPV4_UDP    = 13,
+    ETH_IPV6_UDP_GENEVE_ETH_IPV6_TCP    = 14,
+    ETH_IPV4_GRE_ERSPAN_III_ETH_IPV4_TCP = 15,
+    ETH_IPV6_GRE_ERSPAN_II_ETH_IPV4_TCP = 16,
+    ETH_IPV6_ESP                         = 17,
     // Tunnel
     ETH_IPV4_UDP_VXLAN_ETH_IPV4_TCP    = 20,
     ETH_IPV4_UDP_VXLAN_ETH_IPV4_UDP    = 21,
@@ -106,6 +115,7 @@ typedef enum int {
     ETH_IPV4_TCP_IWARP                 = 53,
     ETH_IPV6_TCP_NVME_TCP               = 54,
     ETH_IPV6_TCP_ISCSI                  = 55,
+    ETH_IPV6_TCP_IWARP                  = 56,
     // Mgmt/Control
     ETH_IPV4_UDP_DHCP                  = 60,
     ETH_IPV6_UDP_DHCPV6                = 61,
@@ -126,8 +136,31 @@ typedef enum int {
     // GTP-U
     ETH_IPV4_UDP_GTP_U_IPV4_UDP         = 84,
     ETH_IPV4_UDP_GTP_U_IPV6_TCP         = 85,
-    ETH_IPV6_UDP_GTP_U_IPV4_TCP         = 86
+    ETH_IPV6_UDP_GTP_U_IPV4_TCP         = 86,
+    ETH_IPV6_UDP_GTP_U_IPV6_TCP         = 87
 } packet_template_e;
+
+typedef enum int {
+    PKT_CAT_ALL      = 0,   // Any template
+    PKT_CAT_BASIC    = 1,   // Non-tunnel basic packets (ETH+L3+L4)
+    PKT_CAT_TCP      = 2,   // All templates containing TCP
+    PKT_CAT_UDP      = 3,   // All templates containing UDP
+    PKT_CAT_ICMP     = 4,   // ICMP and ICMPv6
+    PKT_CAT_SCTP     = 5,   // All SCTP templates
+    PKT_CAT_IPV4     = 6,   // All templates with outer IPv4
+    PKT_CAT_IPV6     = 7,   // All templates with outer IPv6
+    PKT_CAT_TUNNEL   = 8,   // All tunnel templates (VXLAN/GRE/Geneve/GTP-U/ERSPAN/VXLAN-GPE)
+    PKT_CAT_VXLAN    = 9,   // VXLAN tunnel templates
+    PKT_CAT_GRE      = 10,  // GRE tunnel templates
+    PKT_CAT_GENEVE   = 11,  // Geneve tunnel templates
+    PKT_CAT_GTP      = 12,  // GTP-U tunnel templates
+    PKT_CAT_ERSPAN   = 13,  // ERSPAN templates
+    PKT_CAT_ROCEV2   = 14,  // RoCEv2 RDMA templates
+    PKT_CAT_STORAGE  = 15,  // NVMe-TCP + iSCSI + NVMe-RDMA
+    PKT_CAT_MPLS     = 16,  // MPLS templates
+    PKT_CAT_MGMT     = 17,  // Management/control protocols
+    PKT_CAT_ESP      = 18   // IPsec ESP templates
+} pkt_category_e;
 
 typedef enum int {
     PAYLOAD_RANDOM    = 0,
