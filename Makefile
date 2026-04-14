@@ -48,7 +48,10 @@ test_phase2c_headers: test/test_phase2c_headers.sv
 test_phase2c_packet: test/test_phase2c_packet.sv
 	$(MAKE) run_phase2c_packet
 
-test_all: test_protocol_headers test_protocol_graph test_packet_builder test_tunnel_headers test_tunnel_packet test_rdma_storage_headers test_rdma_storage_packet test_phase2c_headers test_phase2c_packet
+test_parser: test/test_parser.sv
+	$(MAKE) run_parser
+
+test_all: test_protocol_headers test_protocol_graph test_packet_builder test_tunnel_headers test_tunnel_packet test_rdma_storage_headers test_rdma_storage_packet test_phase2c_headers test_phase2c_packet test_parser
 
 clean:
 	rm -rf simv_* csrc *.log *.vpd *.fsdb work transcript *.wlf DVEfiles
