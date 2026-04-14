@@ -14,6 +14,7 @@ src/common/packet_utils.sv
 src/protocols/protocol_base.sv
 src/protocols/l2/eth_header.sv
 src/protocols/l2/vlan_header.sv
+src/protocols/l2/mpls_header.sv
 src/protocols/l3/ipv4_header.sv
 src/protocols/l3/ipv6_header.sv
 src/protocols/l3/arp_header.sv
