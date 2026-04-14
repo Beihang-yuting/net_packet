@@ -6,6 +6,7 @@
 +incdir+src/protocols/l4
 +incdir+src/protocols/tunnel
 +incdir+src/protocols/rdma
++incdir+src/protocols/storage
 +incdir+src/core
 
 src/common/packet_defines.sv
@@ -28,6 +29,8 @@ src/protocols/tunnel/gtp_header.sv
 src/protocols/tunnel/ip_in_ip_header.sv
 src/protocols/rdma/rocev2_header.sv
 src/protocols/rdma/iwarp_header.sv
+src/protocols/storage/nvme_tcp_header.sv
+src/protocols/storage/iscsi_header.sv
 src/core/protocol_graph.sv
 src/core/template_registry.sv
 src/core/packet.sv

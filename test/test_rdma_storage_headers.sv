@@ -4,6 +4,8 @@
 `include "protocol_base.sv"
 `include "rdma/rocev2_header.sv"
 `include "rdma/iwarp_header.sv"
+`include "storage/nvme_tcp_header.sv"
+`include "storage/iscsi_header.sv"
 
 program test_rdma_storage_headers;
 
@@ -269,6 +271,120 @@ program test_rdma_storage_headers;
         begin
             iwarp_header iw = iwarp_header::create(4'd2);
             check("iwarp_create: rdmap_opcode", iw.rdmap_opcode == 4'd2);
+        end
+
+        // ---- NVMe-TCP: basic construction ----
+        begin
+            nvme_tcp_header nv = new();
+
+            check("nvmetcp_basic: proto_type",    nv.proto_type       == PROTO_NVME_TCP);
+            check("nvmetcp_basic: header_length", nv.get_header_length() == 8);
+            check("nvmetcp_basic: default pdu_type", nv.pdu_type      == 8'h04);
+        end
+
+        // ---- NVMe-TCP: pack ----
+        begin
+            nvme_tcp_header nv = new();
+            byte unsigned packed[$];
+
+            nv.pdu_type = 8'h04;
+            nv.plen     = 32'd128;
+            nv.pack_header(packed);
+            check("nvmetcp_pack: size", packed.size() == 8);
+        end
+
+        // ---- NVMe-TCP: unpack round-trip ----
+        begin
+            nvme_tcp_header nv = new();
+            byte unsigned packed[$];
+            int offset;
+
+            nv.pdu_type = 8'h04;
+            nv.plen     = 32'd128;
+            nv.pack_header(packed);
+
+            begin
+                nvme_tcp_header nv2 = new();
+                offset = 0;
+                nv2.unpack_header(packed, offset);
+                check("nvmetcp_unpack: pdu_type", nv2.pdu_type == 8'h04);
+                check("nvmetcp_unpack: plen",     nv2.plen     == 32'd128);
+                check("nvmetcp_unpack: offset",   offset == 8);
+            end
+        end
+
+        // ---- NVMe-TCP: clone+compare ----
+        begin
+            nvme_tcp_header nv = new();
+            nv.pdu_type = 8'h04;
+            nv.plen     = 32'd128;
+
+            begin
+                protocol_base nv2 = nv.clone();
+                check("nvmetcp_clone: compare", nv.compare(nv2));
+            end
+        end
+
+        // ---- NVMe-TCP: static create ----
+        begin
+            nvme_tcp_header nv = nvme_tcp_header::create(8'h01);
+            check("nvmetcp_create: pdu_type", nv.pdu_type == 8'h01);
+        end
+
+        // ---- iSCSI: basic construction ----
+        begin
+            iscsi_header iscsi = new();
+
+            check("iscsi_basic: proto_type",    iscsi.proto_type       == PROTO_ISCSI);
+            check("iscsi_basic: header_length", iscsi.get_header_length() == 48);
+            check("iscsi_basic: default opcode", iscsi.opcode          == 6'h01);
+        end
+
+        // ---- iSCSI: pack ----
+        begin
+            iscsi_header iscsi = new();
+            byte unsigned packed[$];
+
+            iscsi.opcode             = 6'h01;
+            iscsi.initiator_task_tag = 32'h12345678;
+            iscsi.lun                = 64'h01;
+            iscsi.pack_header(packed);
+            check("iscsi_pack: size", packed.size() == 48);
+        end
+
+        // ---- iSCSI: unpack round-trip ----
+        begin
+            iscsi_header iscsi = new();
+            byte unsigned packed[$];
+            int offset;
+
+            iscsi.opcode             = 6'h01;
+            iscsi.initiator_task_tag = 32'h12345678;
+            iscsi.lun                = 64'h01;
+            iscsi.pack_header(packed);
+
+            begin
+                iscsi_header iscsi2 = new();
+                offset = 0;
+                iscsi2.unpack_header(packed, offset);
+                check("iscsi_unpack: opcode",             iscsi2.opcode             == 6'h01);
+                check("iscsi_unpack: initiator_task_tag", iscsi2.initiator_task_tag == 32'h12345678);
+                check("iscsi_unpack: lun",                iscsi2.lun                == 64'h01);
+                check("iscsi_unpack: offset",             offset == 48);
+            end
+        end
+
+        // ---- iSCSI: clone+compare ----
+        begin
+            iscsi_header iscsi = new();
+            iscsi.opcode             = 6'h01;
+            iscsi.initiator_task_tag = 32'h12345678;
+            iscsi.lun                = 64'h01;
+
+            begin
+                protocol_base iscsi2 = iscsi.clone();
+                check("iscsi_clone: compare", iscsi.compare(iscsi2));
+            end
         end
 
         $display("=== Results: %0d passed, %0d failed ===", pass_count, fail_count);
