@@ -48,6 +48,10 @@ class packet;
     byte unsigned    payload_fixed_val = 8'h00;
     byte unsigned    payload_pattern[$];
 
+    // ----- Custom chain (overrides pkt_kind when set) -----
+    protected protocol_type_e custom_chain[$];
+    protected bit              use_custom_chain = 0;
+
     // ----- Rand header pools (pre-allocated for single-call randomize) -----
     rand packet_template_e pkt_kind;
     rand int unsigned      pkt_length_rand;
@@ -126,6 +130,21 @@ class packet;
     endfunction
 
     // =========================================================================
+    // set_chain — specify arbitrary protocol chain (overrides pkt_kind)
+    // Usage: pkt.set_chain('{PROTO_ETHERNET, PROTO_VLAN, PROTO_IPV4, PROTO_TCP});
+    // =========================================================================
+    function void set_chain(protocol_type_e chain[$]);
+        custom_chain     = chain;
+        use_custom_chain = 1;
+    endfunction
+
+    // clear_chain — revert to using pkt_kind template
+    function void clear_chain();
+        custom_chain.delete();
+        use_custom_chain = 0;
+    endfunction
+
+    // =========================================================================
     // post_randomize — auto-build layer_stack from pkt_kind + rand headers,
     //                  then auto do_pack() so raw_data is ready immediately
     // =========================================================================
@@ -135,7 +154,12 @@ class packet;
         int eth_idx = 0, vlan_idx = 0, mpls_idx = 0;
         int ipv4_idx = 0, ipv6_idx = 0, udp_idx = 0;
 
-        s_registry.get_chain(pkt_kind, chain);
+        // Priority: custom_chain > pkt_kind template
+        if (use_custom_chain && custom_chain.size() > 0)
+            chain = custom_chain;
+        else
+            s_registry.get_chain(pkt_kind, chain);
+
         layer_stack.delete();
 
         foreach (chain[i]) begin
