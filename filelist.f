@@ -18,6 +18,7 @@ src/protocols/l2/mpls_header.sv
 src/protocols/l3/ipv4_header.sv
 src/protocols/l3/ipv6_header.sv
 src/protocols/l3/arp_header.sv
+src/protocols/l3/ipv6_ext_header.sv
 src/protocols/l4/tcp_header.sv
 src/protocols/l4/udp_header.sv
 src/protocols/l4/icmp_header.sv
