@@ -20,6 +20,10 @@
 `include "tunnel/erspan_header.sv"
 `include "tunnel/gtp_header.sv"
 `include "tunnel/ip_in_ip_header.sv"
+`include "rdma/rocev2_header.sv"
+`include "rdma/iwarp_header.sv"
+`include "storage/nvme_tcp_header.sv"
+`include "storage/iscsi_header.sv"
 `include "core/protocol_graph.sv"
 `include "core/template_registry.sv"
 
@@ -115,6 +119,22 @@ class packet;
             end
             PROTO_IP_IN_IP: begin
                 ip_in_ip_header h = new();
+                return h;
+            end
+            PROTO_ROCEV2: begin
+                rocev2_bth h = new();
+                return h;
+            end
+            PROTO_IWARP: begin
+                iwarp_header h = new();
+                return h;
+            end
+            PROTO_NVME_TCP: begin
+                nvme_tcp_header h = new();
+                return h;
+            end
+            PROTO_ISCSI: begin
+                iscsi_header h = new();
                 return h;
             end
             default: return null;
@@ -298,6 +318,12 @@ class packet;
                     return udp_dstport_to_proto(u.dst_port);
                 end
             end
+            PROTO_TCP: begin
+                tcp_header t;
+                if ($cast(t, hdr)) begin
+                    return tcp_dstport_to_proto(t.dst_port);
+                end
+            end
             PROTO_GRE: begin
                 gre_header g;
                 if ($cast(g, hdr)) begin
@@ -323,6 +349,9 @@ class packet;
                     if (ip_ver == 4) return PROTO_IPV4;
                     if (ip_ver == 6) return PROTO_IPV6;
                 end
+                return PROTO_RAW_PAYLOAD;
+            end
+            PROTO_ROCEV2: begin
                 return PROTO_RAW_PAYLOAD;
             end
             default: return PROTO_RAW_PAYLOAD;
@@ -409,6 +438,17 @@ class packet;
             16'h88BE:        return PROTO_ERSPAN_II;
             16'h22EB:        return PROTO_ERSPAN_III;
             default:         return PROTO_RAW_PAYLOAD;
+        endcase
+    endfunction
+
+    // =========================================================================
+    // TCP dst_port -> protocol mapping
+    // =========================================================================
+    static function protocol_type_e tcp_dstport_to_proto(bit [15:0] port);
+        case (port)
+            16'd4420: return PROTO_NVME_TCP;
+            16'd3260: return PROTO_ISCSI;
+            default:  return PROTO_RAW_PAYLOAD;
         endcase
     endfunction
 
