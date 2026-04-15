@@ -40,7 +40,7 @@ program test_tunnel_packet;
             end
 
             // Pack
-            pkt.pkt_length = 128;
+            pkt.pkt_len = 128;
             pkt.do_pack();
             check("vxlan_tmpl: raw_data not empty", pkt.raw_data.size() > 0);
             check("vxlan_tmpl: raw_data size", pkt.raw_data.size() == 128);
@@ -66,7 +66,7 @@ program test_tunnel_packet;
             check("gre_tmpl: layer count", pkt.layer_stack.size() == 5);
             check("gre_tmpl: layer[2] GRE", pkt.layer_stack[2].proto_type == PROTO_GRE);
 
-            pkt.pkt_length = 100;
+            pkt.pkt_len = 100;
             pkt.do_pack();
             check("gre_tmpl: raw_data size", pkt.raw_data.size() == 100);
 
@@ -85,7 +85,7 @@ program test_tunnel_packet;
             check("geneve_tmpl: layer count", pkt.layer_stack.size() == 7);
             check("geneve_tmpl: layer[3] Geneve", pkt.layer_stack[3].proto_type == PROTO_GENEVE);
 
-            pkt.pkt_length = 128;
+            pkt.pkt_len = 128;
             pkt.do_pack();
             check("geneve_tmpl: raw_data size", pkt.raw_data.size() == 128);
 
@@ -111,7 +111,7 @@ program test_tunnel_packet;
                 es.session_id = 10'd42;
             end
 
-            pkt.pkt_length = 128;
+            pkt.pkt_len = 128;
             pkt.do_pack();
             check("erspan_tmpl: raw_data size", pkt.raw_data.size() == 128);
 
@@ -140,7 +140,7 @@ program test_tunnel_packet;
                 gtp.teid = 32'h0000ABCD;
             end
 
-            pkt.pkt_length = 120;
+            pkt.pkt_len = 120;
             pkt.do_pack();
             check("gtp_tmpl: raw_data size", pkt.raw_data.size() == 120);
 
@@ -164,7 +164,7 @@ program test_tunnel_packet;
             check("nvgre_tmpl: layer[2] GRE", pkt.layer_stack[2].proto_type == PROTO_GRE);
             check("nvgre_tmpl: layer[3] ETH", pkt.layer_stack[3].proto_type == PROTO_ETHERNET);
 
-            pkt.pkt_length = 128;
+            pkt.pkt_len = 128;
             pkt.do_pack();
             check("nvgre_tmpl: raw_data not empty", pkt.raw_data.size() > 0);
         end

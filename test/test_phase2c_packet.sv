@@ -33,7 +33,7 @@ program test_phase2c_packet;
                 m.ttl   = 8'd128;
             end
 
-            pkt.pkt_length = 100;
+            pkt.pkt_len = 100;
             pkt.do_pack();
             check("mpls_tmpl: raw_data size", pkt.raw_data.size() == 100);
 
@@ -65,7 +65,7 @@ program test_phase2c_packet;
                 p.sequence_id  = 16'd42;
             end
 
-            pkt.pkt_length = 80;
+            pkt.pkt_len = 80;
             pkt.do_pack();
             check("ptp_l2: raw_data size", pkt.raw_data.size() == 80);
 
@@ -96,7 +96,7 @@ program test_phase2c_packet;
             check("ipv6_ext: layer count", pkt.layer_stack.size() == 4);
             check("ipv6_ext: layer[2] HBH", pkt.layer_stack[2].proto_type == PROTO_IPV6_HBH);
 
-            pkt.pkt_length = 120;
+            pkt.pkt_len = 120;
             pkt.do_pack();
             check("ipv6_ext: raw_data size", pkt.raw_data.size() == 120);
         end
@@ -117,7 +117,7 @@ program test_phase2c_packet;
             check("esp: layer count", pkt.layer_stack.size() == 3);
             check("esp: layer[2] ESP", pkt.layer_stack[2].proto_type == PROTO_ESP);
 
-            pkt.pkt_length = 100;
+            pkt.pkt_len = 100;
             pkt.do_pack();
             check("esp: raw_data size", pkt.raw_data.size() == 100);
         end

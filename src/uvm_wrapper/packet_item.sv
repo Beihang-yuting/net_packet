@@ -24,7 +24,7 @@ class packet_item extends uvm_sequence_item;
         if ($cast(rhs_item, rhs)) begin
             // Deep copy: clone all layers
             pkt = new();
-            pkt.pkt_length       = rhs_item.pkt.pkt_length;
+            pkt.pkt_len       = rhs_item.pkt.pkt_len;
             pkt.payload_mode     = rhs_item.pkt.payload_mode;
             pkt.payload_fixed_val = rhs_item.pkt.payload_fixed_val;
             pkt.payload_pattern  = rhs_item.pkt.payload_pattern;

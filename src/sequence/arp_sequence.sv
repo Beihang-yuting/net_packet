@@ -40,7 +40,7 @@ class arp_seq extends protocol_sequence;
                 arp.target_mac = 48'h000000000000;
                 arp.target_ip  = dst_ip;
             end
-            pkt.pkt_length = 42;  // ETH(14) + ARP(28)
+            pkt.pkt_len = 42;  // ETH(14) + ARP(28)
             pkt.do_pack();
             packets.push_back(pkt);
         end
@@ -64,7 +64,7 @@ class arp_seq extends protocol_sequence;
                 arp.target_mac = src_mac;
                 arp.target_ip  = src_ip;
             end
-            pkt.pkt_length = 42;
+            pkt.pkt_len = 42;
             pkt.do_pack();
             packets.push_back(pkt);
         end

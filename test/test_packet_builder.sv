@@ -128,7 +128,7 @@ program test_packet_builder;
         // -----------------------------------------------------------------
         pkt = new();
         pkt.build_from_template(ETH_IPV4_TCP);
-        pkt.pkt_length = 100;
+        pkt.pkt_len = 100;
         pkt.payload_mode = PAYLOAD_FIXED;
         pkt.payload_fixed_val = 8'hAA;
         pkt.do_pack();
@@ -141,7 +141,7 @@ program test_packet_builder;
         // -----------------------------------------------------------------
         pkt = new();
         pkt.build_from_template(ETH_IPV4_TCP);
-        pkt.pkt_length = 10;  // less than 54
+        pkt.pkt_len = 10;  // less than 54
         pkt.do_pack();
         check("length_control_short: raw_data.size() == headers_length",
               pkt.raw_data.size() == pkt.get_all_headers_length());
@@ -152,7 +152,7 @@ program test_packet_builder;
         // -----------------------------------------------------------------
         pkt = new();
         pkt.build_from_template(ETH_IPV4_TCP);
-        pkt.pkt_length = 64;
+        pkt.pkt_len = 64;
         pkt.payload_mode = PAYLOAD_INCREMENT;
         pkt.do_pack();
         begin
@@ -179,7 +179,7 @@ program test_packet_builder;
             packet pkt_tx = new();
             packet pkt_rx = new();
             pkt_tx.build_from_template(ETH_IPV4_TCP);
-            pkt_tx.pkt_length = 100;
+            pkt_tx.pkt_len = 100;
             pkt_tx.payload_mode = PAYLOAD_FIXED;
             pkt_tx.payload_fixed_val = 8'h55;
             pkt_tx.do_pack();
@@ -210,7 +210,7 @@ program test_packet_builder;
         // -----------------------------------------------------------------
         pkt = new();
         pkt.build_from_template(ETH_IPV4_TCP);
-        pkt.pkt_length = 64;
+        pkt.pkt_len = 64;
         pkt.do_pack();
         s = pkt.to_brief();
         check("to_brief: non-empty", s.len() > 0);

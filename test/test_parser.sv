@@ -28,7 +28,7 @@ program test_parser;
 
             // Build and pack a known packet
             pkt_orig.build_from_template(ETH_IPV4_TCP);
-            pkt_orig.pkt_length = 100;
+            pkt_orig.pkt_len = 100;
             pkt_orig.do_pack();
 
             // Parse the raw bytes
@@ -85,11 +85,11 @@ program test_parser;
             diff_entry_t diffs[$];
 
             pkt_a.build_from_template(ETH_IPV4_TCP);
-            pkt_a.pkt_length = 100;
+            pkt_a.pkt_len = 100;
             pkt_a.do_pack();
 
             pkt_b.build_from_template(ETH_IPV4_TCP);
-            pkt_b.pkt_length = 100;
+            pkt_b.pkt_len = 100;
             pkt_b.do_pack();
 
             // Since both use same template with same defaults, layers should match

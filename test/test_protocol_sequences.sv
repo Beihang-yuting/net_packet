@@ -89,7 +89,7 @@ program test_protocol_sequences;
             sess.src_port        = 16'd55555;
             sess.dst_port        = 16'd80;
             sess.data_pkt_count  = 3;
-            sess.data_pkt_length = 100;
+            sess.data_pkt_len = 100;
             sess.generate();
             sess.get_packets(pkts);
 

@@ -44,7 +44,7 @@ class tcp_handshake_seq extends protocol_sequence;
                 tcp.ack_num  = 0;
                 tcp.flags    = 9'h002;  // SYN
             end
-            pkt.pkt_length = 54;  // ETH(14) + IPv4(20) + TCP(20)
+            pkt.pkt_len = 54;  // ETH(14) + IPv4(20) + TCP(20)
             pkt.do_pack();
             packets.push_back(pkt);
         end
@@ -63,7 +63,7 @@ class tcp_handshake_seq extends protocol_sequence;
                 tcp.ack_num  = isn_client + 1;
                 tcp.flags    = 9'h012;  // SYN+ACK
             end
-            pkt.pkt_length = 54;
+            pkt.pkt_len = 54;
             pkt.do_pack();
             packets.push_back(pkt);
         end
@@ -82,7 +82,7 @@ class tcp_handshake_seq extends protocol_sequence;
                 tcp.ack_num  = isn_server + 1;
                 tcp.flags    = 9'h010;  // ACK
             end
-            pkt.pkt_length = 54;
+            pkt.pkt_len = 54;
             pkt.do_pack();
             packets.push_back(pkt);
         end
@@ -120,7 +120,7 @@ class tcp_full_session_seq extends protocol_sequence;
     bit [31:0] isn_client;
     bit [31:0] isn_server;
     int unsigned data_pkt_count;
-    int unsigned data_pkt_length;
+    int unsigned data_pkt_len;
 
     function new();
         src_mac         = 48'h001122334455;
@@ -132,7 +132,7 @@ class tcp_full_session_seq extends protocol_sequence;
         isn_client      = 32'd1000;
         isn_server      = 32'd2000;
         data_pkt_count  = 3;
-        data_pkt_length = 100;
+        data_pkt_len = 100;
     endfunction
 
     virtual function void generate();
@@ -141,7 +141,7 @@ class tcp_full_session_seq extends protocol_sequence;
         int payload_per_pkt;
 
         packets.delete();
-        payload_per_pkt = data_pkt_length - 54;  // minus ETH+IP+TCP headers
+        payload_per_pkt = data_pkt_len - 54;  // minus ETH+IP+TCP headers
         if (payload_per_pkt < 0) payload_per_pkt = 0;
 
         client_seq = isn_client;
@@ -176,7 +176,7 @@ class tcp_full_session_seq extends protocol_sequence;
         for (int i = 0; i < data_pkt_count; i++) begin
             packet pkt = build_tcp_pkt(src_mac, dst_mac, src_ip, dst_ip,
                                         src_port, dst_port, client_seq, server_seq,
-                                        9'h018, data_pkt_length);  // PSH+ACK
+                                        9'h018, data_pkt_len);  // PSH+ACK
             packets.push_back(pkt);
             client_seq += payload_per_pkt;
         end
@@ -245,7 +245,7 @@ class tcp_full_session_seq extends protocol_sequence;
             tcp.ack_num  = ack;
             tcp.flags    = tcp_flags;
         end
-        pkt.pkt_length = pkt_len;
+        pkt.pkt_len = pkt_len;
         pkt.do_pack();
         return pkt;
     endfunction

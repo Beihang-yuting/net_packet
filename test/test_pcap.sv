@@ -41,7 +41,7 @@ program test_pcap;
                 tcp.src_port = 16'd12345;
                 tcp.dst_port = 16'd80;
             end
-            pkt_orig.pkt_length = 100;
+            pkt_orig.pkt_len = 100;
             pkt_orig.payload_mode = PAYLOAD_INCREMENT;
             pkt_orig.do_pack();
 
@@ -89,7 +89,7 @@ program test_pcap;
                     $cast(u, p.get_layer(PROTO_UDP));
                     u.dst_port = 16'd(5000 + i);
                 end
-                p.pkt_length = 64 + i * 10;
+                p.pkt_len = 64 + i * 10;
                 p.do_pack();
                 pkts.push_back(p);
             end

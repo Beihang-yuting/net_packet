@@ -27,7 +27,7 @@ program test_rdma_storage_packet;
             check("rocev2_send: layer[3] RoCEv2", pkt.layer_stack[3].proto_type == PROTO_ROCEV2);
 
             // Default is Send Only (0x04)
-            pkt.pkt_length = 100;
+            pkt.pkt_len = 100;
             pkt.do_pack();
             check("rocev2_send: raw_data size", pkt.raw_data.size() == 100);
 
@@ -56,7 +56,7 @@ program test_rdma_storage_packet;
                 bth.icrc_enable   = 0;  // Disable ICRC for simpler size check
             end
 
-            pkt.pkt_length = 120;
+            pkt.pkt_len = 120;
             pkt.do_pack();
             check("rocev2_write: raw_data size", pkt.raw_data.size() == 120);
 
@@ -89,7 +89,7 @@ program test_rdma_storage_packet;
                 bth.icrc_enable    = 0;
             end
 
-            pkt.pkt_length = 80;
+            pkt.pkt_len = 80;
             pkt.do_pack();
             check("rocev2_ack: raw_data size", pkt.raw_data.size() == 80);
 
@@ -128,7 +128,7 @@ program test_rdma_storage_packet;
                 nvme.pdu_type = 8'h04;
             end
 
-            pkt.pkt_length = 100;
+            pkt.pkt_len = 100;
             pkt.do_pack();
             check("nvme_tcp: raw_data size", pkt.raw_data.size() == 100);
 
@@ -157,7 +157,7 @@ program test_rdma_storage_packet;
                 iscsi.initiator_task_tag = 32'hDEADBEEF;
             end
 
-            pkt.pkt_length = 110;
+            pkt.pkt_len = 110;
             pkt.do_pack();
             check("iscsi: raw_data size", pkt.raw_data.size() == 110);
 
@@ -187,7 +187,7 @@ program test_rdma_storage_packet;
                 iw.sink_stag = 32'h12345678;
             end
 
-            pkt.pkt_length = 110;
+            pkt.pkt_len = 110;
             pkt.do_pack();
             check("iwarp: raw_data size", pkt.raw_data.size() == 110);
 

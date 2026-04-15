@@ -45,7 +45,7 @@ class traffic_stream;
     protected function packet clone_packet(packet src);
         packet dst = new();
         dst.force_mode      = 1;
-        dst.pkt_length       = src.pkt_length;
+        dst.pkt_len       = src.pkt_len;
         dst.payload_mode     = src.payload_mode;
         dst.payload_fixed_val = src.payload_fixed_val;
         dst.payload_pattern  = src.payload_pattern;

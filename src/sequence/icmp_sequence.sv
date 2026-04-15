@@ -51,7 +51,7 @@ class icmp_ping_seq extends protocol_sequence;
                 icmp.identifier  = identifier;
                 icmp.sequence_num = sequence_number;
             end
-            pkt.pkt_length = ping_length;
+            pkt.pkt_len = ping_length;
             pkt.do_pack();
             packets.push_back(pkt);
         end
@@ -80,7 +80,7 @@ class icmp_ping_seq extends protocol_sequence;
                 icmp.identifier   = identifier;
                 icmp.sequence_num = sequence_number;
             end
-            pkt.pkt_length = ping_length;
+            pkt.pkt_len = ping_length;
             pkt.do_pack();
             packets.push_back(pkt);
         end

@@ -27,7 +27,7 @@ program test_traffic_stream;
             packet pkts[$];
 
             base.build_from_template(ETH_IPV4_TCP);
-            base.pkt_length = 64;
+            base.pkt_len = 64;
 
             mod.min_val = 32'hC0A80001;
             mod.max_val = 32'hC0A800FF;
@@ -63,7 +63,7 @@ program test_traffic_stream;
             packet pkts[$];
 
             base.build_from_template(ETH_IPV4_TCP);
-            base.pkt_length = 64;
+            base.pkt_len = 64;
 
             mod_ip.min_val = 32'h0A000001;
             mod_ip.max_val = 32'h0A0000FF;
@@ -99,7 +99,7 @@ program test_traffic_stream;
             packet pkts[$];
 
             base.build_from_template(ETH_IPV4_UDP);
-            base.pkt_length = 64;
+            base.pkt_len = 64;
 
             mod.value_list = '{16'd53, 16'd80, 16'd443};
 
@@ -129,7 +129,7 @@ program test_traffic_stream;
             packet pkts[$];
 
             base.build_from_template(ETH_IPV4_TCP);
-            base.pkt_length = 64;
+            base.pkt_len = 64;
 
             mod.min_val = 8'd1;
             mod.max_val = 8'd255;

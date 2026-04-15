@@ -43,7 +43,6 @@ class packet;
 
     // ----- Instance control -----
     bit              force_mode        = 0;
-    int              pkt_length        = 0;   // 0 = headers only (no payload)
     payload_mode_e   payload_mode      = PAYLOAD_RANDOM;
     byte unsigned    payload_fixed_val = 8'h00;
     byte unsigned    payload_pattern[$];
@@ -55,7 +54,7 @@ class packet;
     // ----- Rand header pools (pre-allocated for single-call randomize) -----
     rand packet_template_e pkt_kind;
     rand pkt_category_e    pkt_rand_kind;
-    rand int unsigned      pkt_length_rand;
+    rand int unsigned      pkt_len;
 
     // L2: outer/inner for tunnel scenarios; non-tunnel uses outer_xxx
     rand eth_header        outer_eth, inner_eth;
@@ -93,8 +92,8 @@ class packet;
     // App
     rand ptp_header        ptp;
 
-    constraint c_pkt_length_rand {
-        soft pkt_length_rand inside {[64:9216]};
+    constraint c_pkt_len {
+        soft pkt_len inside {[64:1518]};
     }
 
     constraint c_vlan_num {
@@ -597,8 +596,7 @@ class packet;
             endcase
         end
 
-        // Apply randomized pkt_length and auto-pack
-        pkt_length = pkt_length_rand;
+        // Auto-pack
         do_pack();
     endfunction
 
@@ -1003,15 +1001,15 @@ class packet;
         headers_len = get_all_headers_length();
 
         // Determine payload length
-        if (pkt_length == 0) begin
+        if (pkt_len == 0) begin
             payload_len = 0;
-        end else if (pkt_length > headers_len) begin
-            payload_len = pkt_length - headers_len;
-        end else if (pkt_length == headers_len) begin
+        end else if (pkt_len > headers_len) begin
+            payload_len = pkt_len - headers_len;
+        end else if (pkt_len == headers_len) begin
             payload_len = 0;
         end else begin
-            $warning("packet::do_pack: pkt_length (%0d) < headers_length (%0d), no payload generated",
-                     pkt_length, headers_len);
+            $warning("packet::do_pack: pkt_len (%0d) < headers_length (%0d), no payload generated",
+                     pkt_len, headers_len);
             payload_len = 0;
         end
 

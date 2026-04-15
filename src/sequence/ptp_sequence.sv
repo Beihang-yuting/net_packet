@@ -57,7 +57,7 @@ class ptp_sync_seq extends protocol_sequence;
             ptp.port_number   = port_number;
             ptp.sequence_id   = seq;
         end
-        pkt.pkt_length = 48;  // ETH(14) + PTP(34)
+        pkt.pkt_len = 48;  // ETH(14) + PTP(34)
         pkt.do_pack();
         return pkt;
     endfunction

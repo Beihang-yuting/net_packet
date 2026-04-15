@@ -25,7 +25,7 @@ program test_ip_fragment;
             packet fragments[$];
 
             pkt.build_from_template(ETH_IPV4_TCP);
-            pkt.pkt_length = 300;   // 14 ETH + 20 IPv4 + 20 TCP + 246 payload = 300
+            pkt.pkt_len = 300;   // 14 ETH + 20 IPv4 + 20 TCP + 246 payload = 300
             pkt.payload_mode = PAYLOAD_INCREMENT;
             pkt.do_pack();
 
@@ -69,7 +69,7 @@ program test_ip_fragment;
             packet fragments[$];
 
             pkt.build_from_template(ETH_IPV4_TCP);
-            pkt.pkt_length = 80;
+            pkt.pkt_len = 80;
             pkt.do_pack();
 
             ip_fragment::fragment(pkt, 1500, fragments);
@@ -83,7 +83,7 @@ program test_ip_fragment;
             packet reassembled;
 
             pkt_orig.build_from_template(ETH_IPV4_TCP);
-            pkt_orig.pkt_length = 300;
+            pkt_orig.pkt_len = 300;
             pkt_orig.payload_mode = PAYLOAD_INCREMENT;
             pkt_orig.do_pack();
 
