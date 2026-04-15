@@ -158,6 +158,45 @@ class gre_header extends protocol_base;
         return $sformatf("GRE proto:0x%04x c:%0b k:%0b s:%0b", protocol_type, c_flag, k_flag, s_flag);
     endfunction
 
+    // help — print GRE options usage guide
+    static function void help();
+        $display("============================================================================");
+        $display(" GRE Optional Fields Guide (RFC 2784/2890)");
+        $display("============================================================================");
+        $display("");
+        $display(" Optional fields (controlled by flags):");
+        $display("   c_flag=1 → Checksum(16b) + Reserved1(16b)  [+4 bytes]");
+        $display("   k_flag=1 → Key(32b)                        [+4 bytes]");
+        $display("   s_flag=1 → Sequence Number(32b)             [+4 bytes]");
+        $display("");
+        $display(" Header size: 4 (base) + 4*(c_flag+k_flag+s_flag) = 4~16 bytes");
+        $display("");
+        $display(" Usage:");
+        $display("   pkt.randomize() with {");
+        $display("       pkt_kind == ETH_IPV4_GRE_IPV4_TCP;");
+        $display("       gre.k_flag == 1;");
+        $display("       gre.key    == 32'h0000_ABCD;");
+        $display("       gre.s_flag == 1;");
+        $display("       gre.sequence_number == 32'd1;");
+        $display("   };");
+        $display("");
+        $display("   // With checksum (auto-computed in calc_fields):");
+        $display("   pkt.randomize() with {");
+        $display("       pkt_kind == ETH_IPV4_GRE_IPV4_TCP;");
+        $display("       gre.c_flag == 1;  // checksum auto-calculated");
+        $display("       gre.k_flag == 1;");
+        $display("       gre.key == 32'hDEAD_BEEF;");
+        $display("   };");
+        $display("");
+        $display(" NVGRE (Network Virtualization using GRE):");
+        $display("   pkt.randomize() with {");
+        $display("       pkt_kind == ETH_IPV4_GRE_ETH_IPV4_TCP;  // GRE L2");
+        $display("       gre.k_flag == 1;");
+        $display("       gre.key == {24'h001234, 8'h00};  // VSID=0x1234, FlowID=0");
+        $display("   };");
+        $display("============================================================================");
+    endfunction
+
 endclass
 
 `endif // GRE_HEADER_SV

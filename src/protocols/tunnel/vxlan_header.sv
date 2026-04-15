@@ -92,6 +92,27 @@ class vxlan_header extends protocol_base;
         return $sformatf("VXLAN vni:%0d flags:0x%02x", vni, flags);
     endfunction
 
+    static function void help();
+        $display("============================================================================");
+        $display(" VXLAN Header Guide (RFC 7348)");
+        $display("============================================================================");
+        $display("");
+        $display(" Fields:");
+        $display("   flags(8b)    = 0x08 (I-flag set, auto-computed)");
+        $display("   vni(24b)     = VXLAN Network Identifier");
+        $display("   reserved(32b)= 0 (auto)");
+        $display("   UDP dst_port = 4789 (auto-set by calc_fields)");
+        $display("");
+        $display(" Usage:");
+        $display("   pkt.randomize() with {");
+        $display("       pkt_kind == ETH_IPV4_UDP_VXLAN_ETH_IPV4_TCP;");
+        $display("       vxlan.vni == 24'd1000;");
+        $display("       outer_vlan_num == 1;");
+        $display("       outer_vlan[0].vlan_id == 100;");
+        $display("   };");
+        $display("============================================================================");
+    endfunction
+
 endclass
 
 `endif // VXLAN_HEADER_SV

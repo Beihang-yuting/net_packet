@@ -165,6 +165,80 @@ class gtp_u_header extends protocol_base;
         return $sformatf("GTP-U teid:0x%08x msg_type:0x%02x len:%0d", teid, message_type, length);
     endfunction
 
+    // =========================================================================
+    // GTP-U Extension Header Helpers
+    // =========================================================================
+
+    // Build a single GTP-U extension header
+    // ext_type: extension header type (put in previous header's next_ext_hdr_type)
+    // ext_data: content bytes (will be padded to make total multiple of 4)
+    // next_type: next extension header type (0=no more)
+    // Returns: {length, content_bytes..., next_type} with proper padding
+    static function byte unsigned build_ext_header(
+        byte unsigned ext_data[$],
+        bit [7:0] next_type = 0
+    );
+        byte unsigned ext[$];
+        int content_len = ext_data.size();
+        // Total = 1 (length) + content + padding + 1 (next_type)
+        // Must be multiple of 4 bytes
+        int total_len = 2 + content_len;  // length byte + content + next_type byte
+        int padded_total = ((total_len + 3) / 4) * 4;
+        int pad_bytes = padded_total - total_len;
+        // Length in 4-byte units
+        ext.push_back(padded_total / 4);
+        // Content
+        foreach (ext_data[i]) ext.push_back(ext_data[i]);
+        // Padding
+        for (int i = 0; i < pad_bytes; i++) ext.push_back(8'h00);
+        // Next extension header type
+        ext.push_back(next_type);
+        return ext;
+    endfunction
+
+    // help — print GTP-U usage guide
+    static function void help();
+        $display("============================================================================");
+        $display(" GTP-U Header Guide (3GPP TS 29.281)");
+        $display("============================================================================");
+        $display("");
+        $display(" Basic fields:");
+        $display("   version(3b)=1, pt(1b)=1, message_type(8b)=0xFF(G-PDU)");
+        $display("   teid(32b): Tunnel Endpoint Identifier");
+        $display("   length(16b): auto-computed by calc_fields");
+        $display("");
+        $display(" Optional fields (when e_flag|s_flag|pn_flag set):");
+        $display("   sequence_number(16b), n_pdu_number(8b), next_ext_hdr_type(8b)");
+        $display("   Header grows from 8B to 12B");
+        $display("");
+        $display(" Usage:");
+        $display("   pkt.randomize() with {");
+        $display("       pkt_kind == ETH_IPV4_UDP_GTP_U_IPV4_TCP;");
+        $display("       gtp_u.teid == 32'h0000_ABCD;");
+        $display("   };");
+        $display("");
+        $display("   // With sequence number:");
+        $display("   pkt.randomize() with {");
+        $display("       pkt_kind == ETH_IPV4_UDP_GTP_U_IPV4_TCP;");
+        $display("       gtp_u.teid   == 32'h0000_1234;");
+        $display("       gtp_u.s_flag == 1;");
+        $display("       gtp_u.sequence_number == 16'h0001;");
+        $display("   };");
+        $display("");
+        $display(" Common next_ext_hdr_type values:");
+        $display("   0x00 = No more extension headers");
+        $display("   0x03 = Long PDCP PDU Number");
+        $display("   0x20 = Service Class Indicator");
+        $display("   0x40 = UDP Port (for NR user plane)");
+        $display("   0x81 = RAN Container");
+        $display("   0x82 = Long PDCP PDU Number (old)");
+        $display("   0x83 = Xw RAN Container");
+        $display("   0x84 = NR RAN Container");
+        $display("   0x85 = PDU Session Container");
+        $display("   0xC0 = PDCP PDU Number");
+        $display("============================================================================");
+    endfunction
+
 endclass
 
 `endif // GTP_HEADER_SV

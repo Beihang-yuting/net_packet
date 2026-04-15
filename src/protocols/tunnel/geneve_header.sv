@@ -138,6 +138,70 @@ class geneve_header extends protocol_base;
         return $sformatf("Geneve vni:%0d proto:0x%04x opt_len:%0d", vni, protocol_type, opt_len);
     endfunction
 
+    // =========================================================================
+    // Geneve TLV Option Construction Helpers
+    // Build option byte arrays and assign to geneve.options
+    // =========================================================================
+
+    // Build a single Geneve TLV option
+    // opt_class: 16-bit option class (0x0100=Linux, 0x0000=unassigned)
+    // opt_type:  7-bit type code (bit 7 = critical flag)
+    // opt_data:  option data (must be multiple of 4 bytes)
+    static function byte unsigned build_tlv(
+        bit [15:0] opt_class,
+        bit [7:0]  opt_type,
+        byte unsigned opt_data[$]
+    );
+        byte unsigned tlv[$];
+        int data_len_words = opt_data.size() / 4;
+        // Option header: class(16) + type(8) + R(3)+Len(5)
+        tlv.push_back(opt_class[15:8]);
+        tlv.push_back(opt_class[7:0]);
+        tlv.push_back(opt_type);
+        tlv.push_back({3'b000, data_len_words[4:0]});
+        // Data
+        foreach (opt_data[i]) tlv.push_back(opt_data[i]);
+        return tlv;
+    endfunction
+
+    // Build multiple TLV options and concatenate
+    // After building, assign to geneve.options and geneve.opt_len will auto-compute in calc_fields
+    static function byte unsigned build_options(byte unsigned tlv_list[$]);
+        // TLV list is already concatenated; just ensure 4-byte alignment
+        byte unsigned result[$];
+        result = tlv_list;
+        while (result.size() % 4 != 0)
+            result.push_back(8'd0);
+        return result;
+    endfunction
+
+    // help — print Geneve options usage guide
+    static function void help();
+        $display("============================================================================");
+        $display(" Geneve TLV Options Guide (RFC 8926)");
+        $display("============================================================================");
+        $display("");
+        $display(" TLV format: Class(16b) | Type(8b) | R(3b)+Len(5b) | Data(Len*4 bytes)");
+        $display("");
+        $display(" Build options:");
+        $display("   byte unsigned opts[$], tlv[$];");
+        $display("   // Option 1: class=0x0100, type=1, data=4 bytes");
+        $display("   byte unsigned data1[$] = '{8'hAA, 8'hBB, 8'hCC, 8'hDD};");
+        $display("   tlv = geneve_header::build_tlv(16'h0100, 8'h01, data1);");
+        $display("   foreach (tlv[i]) opts.push_back(tlv[i]);");
+        $display("   // Option 2: class=0x0100, type=2, data=8 bytes");
+        $display("   byte unsigned data2[$] = '{8'h01,8'h02,8'h03,8'h04,8'h05,8'h06,8'h07,8'h08};");
+        $display("   tlv = geneve_header::build_tlv(16'h0100, 8'h02, data2);");
+        $display("   foreach (tlv[i]) opts.push_back(tlv[i]);");
+        $display("");
+        $display(" Assign to packet:");
+        $display("   pkt.randomize() with { pkt_kind == ETH_IPV4_UDP_GENEVE_ETH_IPV4_TCP; };");
+        $display("   pkt.geneve.options = geneve_header::build_options(opts);");
+        $display("   pkt.geneve.opt_len = pkt.geneve.options.size() / 4;");
+        $display("   pkt.do_pack();  // re-pack with options");
+        $display("============================================================================");
+    endfunction
+
 endclass
 
 `endif // GENEVE_HEADER_SV
