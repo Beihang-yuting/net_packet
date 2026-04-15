@@ -47,6 +47,7 @@ src/core/protocol_graph.sv
 src/core/template_registry.sv
 src/core/packet.sv
 src/core/ip_fragment.sv
+src/core/tcp_segment.sv
 src/parser/protocol_parser.sv
 src/parser/packet_comparator.sv
 src/pcap/pcap_writer.sv

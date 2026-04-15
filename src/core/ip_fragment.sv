@@ -181,6 +181,36 @@ class ip_fragment;
         return result;
     endfunction
 
+    // help — print usage guide
+    static function void help();
+        $display("============================================================================");
+        $display(" IP Fragmentation Guide (ip_fragment)");
+        $display("============================================================================");
+        $display("");
+        $display(" Fragment a packet by MTU:");
+        $display("   packet pkt = new();");
+        $display("   pkt.randomize() with {");
+        $display("       pkt_kind == ETH_IPV4_TCP;");
+        $display("       outer_ipv4.identification == 16'hABCD;");
+        $display("       pkt_len == 4000;");
+        $display("   };");
+        $display("   packet frags[$];");
+        $display("   ip_fragment::fragment(pkt, 1500, frags);");
+        $display("   // frags[0]: MF=1, offset=0,    len=1500");
+        $display("   // frags[1]: MF=1, offset=185,   len=1500");
+        $display("   // frags[2]: MF=0, offset=370,   len=1040");
+        $display("");
+        $display(" Reassemble fragments:");
+        $display("   packet reassembled = ip_fragment::reassemble(frags);");
+        $display("");
+        $display(" Fragment fields:");
+        $display("   IPv4.flags[0]       — MF (More Fragments): 1=more, 0=last");
+        $display("   IPv4.fragment_offset — offset in 8-byte units");
+        $display("   IPv4.identification  — same across all fragments");
+        $display("   IPv4.total_length    — per-fragment IP length");
+        $display("============================================================================");
+    endfunction
+
 endclass
 
 `endif // IP_FRAGMENT_SV
