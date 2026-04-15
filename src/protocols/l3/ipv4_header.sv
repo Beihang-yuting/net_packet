@@ -21,6 +21,15 @@ class ipv4_header extends protocol_base;
     rand bit [31:0] dst_addr;
          byte unsigned options[$];
 
+    // ----- IPv4 Option rand controls -----
+    rand bit        opt_rr_en;       // Record Route
+    rand bit [3:0]  opt_rr_slots;    // Number of IP address slots (1-9)
+    rand bit        opt_ts_en;       // Timestamp
+    rand bit [3:0]  opt_ts_slots;    // Number of timestamp slots (1-9)
+    rand bit        opt_lsr_en;      // Loose Source Route
+    rand bit [31:0] opt_lsr_addrs[4]; // Up to 4 route addresses
+    rand bit [2:0]  opt_lsr_count;   // Number of LSR addresses (1-4)
+
     constraint c_default {
         soft version == 4;
         soft ihl == 5;
@@ -29,6 +38,15 @@ class ipv4_header extends protocol_base;
         soft fragment_offset == 0;
         soft dscp == 0;
         soft ecn == 0;
+    }
+
+    constraint c_opt_default {
+        soft opt_rr_en    == 0;
+        soft opt_rr_slots inside {[1:9]};
+        soft opt_ts_en    == 0;
+        soft opt_ts_slots inside {[1:4]};
+        soft opt_lsr_en   == 0;
+        soft opt_lsr_count inside {[1:4]};
     }
 
     function new();
@@ -46,6 +64,13 @@ class ipv4_header extends protocol_base;
         header_checksum  = 0;
         src_addr         = 0;
         dst_addr         = 0;
+        opt_rr_en    = 0;
+        opt_rr_slots = 4'd9;
+        opt_ts_en    = 0;
+        opt_ts_slots = 4'd4;
+        opt_lsr_en   = 0;
+        opt_lsr_count = 3'd0;
+        foreach (opt_lsr_addrs[i]) opt_lsr_addrs[i] = 0;
     endfunction
 
     static function ipv4_header create(bit [31:0] src = 0, bit [31:0] dst = 0,
@@ -130,6 +155,9 @@ class ipv4_header extends protocol_base;
             default: ;
         endcase
 
+        // Auto-build options from rand enable fields
+        build_options_from_fields();
+
         // Compute IHL
         ihl = 5 + options.size() / 4;
 
@@ -143,6 +171,51 @@ class ipv4_header extends protocol_base;
             pack_header(hdr_data);
             header_checksum = packet_utils::ones_complement_checksum(hdr_data);
         end
+    endfunction
+
+    protected function void build_options_from_fields();
+        if (!opt_rr_en && !opt_ts_en && !opt_lsr_en) return;
+
+        options.delete();
+
+        // Record Route (Type=7)
+        if (opt_rr_en) begin
+            int len = 3 + opt_rr_slots * 4;
+            options.push_back(8'd7);
+            options.push_back(len[7:0]);
+            options.push_back(8'd4);  // pointer
+            for (int i = 0; i < opt_rr_slots * 4; i++)
+                options.push_back(8'd0);
+        end
+
+        // Timestamp (Type=68)
+        if (opt_ts_en) begin
+            int len = 4 + opt_ts_slots * 4;
+            options.push_back(8'd68);
+            options.push_back(len[7:0]);
+            options.push_back(8'd5);  // pointer
+            options.push_back(8'd0);  // overflow + flag
+            for (int i = 0; i < opt_ts_slots * 4; i++)
+                options.push_back(8'd0);
+        end
+
+        // Loose Source Route (Type=131)
+        if (opt_lsr_en) begin
+            int len = 3 + opt_lsr_count * 4;
+            options.push_back(8'd131);
+            options.push_back(len[7:0]);
+            options.push_back(8'd4);  // pointer
+            for (int i = 0; i < opt_lsr_count; i++) begin
+                options.push_back(opt_lsr_addrs[i][31:24]);
+                options.push_back(opt_lsr_addrs[i][23:16]);
+                options.push_back(opt_lsr_addrs[i][15:8]);
+                options.push_back(opt_lsr_addrs[i][7:0]);
+            end
+        end
+
+        // Pad to 4-byte boundary
+        while (options.size() % 4 != 0)
+            options.push_back(8'd0);
     endfunction
 
     virtual function protocol_base clone();
@@ -161,6 +234,13 @@ class ipv4_header extends protocol_base;
         h.src_addr        = src_addr;
         h.dst_addr        = dst_addr;
         h.options         = options;
+        h.opt_rr_en    = opt_rr_en;
+        h.opt_rr_slots = opt_rr_slots;
+        h.opt_ts_en    = opt_ts_en;
+        h.opt_ts_slots = opt_ts_slots;
+        h.opt_lsr_en   = opt_lsr_en;
+        h.opt_lsr_count = opt_lsr_count;
+        h.opt_lsr_addrs = opt_lsr_addrs;
         h.auto_calc       = auto_calc;
         return h;
     endfunction
@@ -297,7 +377,25 @@ class ipv4_header extends protocol_base;
         $display(" IPv4 Options Construction Guide");
         $display("============================================================================");
         $display("");
-        $display(" Available Options:");
+        $display(" Usage with randomize (recommended):");
+        $display("   pkt.randomize() with {");
+        $display("       pkt_kind == ETH_IPV4_TCP;");
+        $display("       outer_ipv4.opt_rr_en    == 1;    // enable Record Route");
+        $display("       outer_ipv4.opt_rr_slots == 9;    // 9 address slots");
+        $display("   };");
+        $display("   // options auto-built, ihl auto-computed");
+        $display("");
+        $display("   pkt.randomize() with {");
+        $display("       outer_ipv4.opt_ts_en    == 1;    // enable Timestamp");
+        $display("       outer_ipv4.opt_ts_slots == 4;    // 4 timestamp slots");
+        $display("   };");
+        $display("");
+        $display("   pkt.randomize() with {");
+        $display("       outer_ipv4.opt_lsr_en    == 1;   // enable Loose Source Route");
+        $display("       outer_ipv4.opt_lsr_count == 3;   // 3 route addresses");
+        $display("   };");
+        $display("");
+        $display(" Available static helpers (manual approach):");
         $display("   opt_nop()                               — NOP (Type=1, 1B)");
         $display("   opt_eol()                               — End (Type=0, 1B)");
         $display("   opt_record_route(num_slots)             — Record Route (Type=7)");
@@ -306,15 +404,9 @@ class ipv4_header extends protocol_base;
         $display("   opt_strict_source_route(addrs[$])       — SSR (Type=137)");
         $display("   build_options(raw_bytes)                 — Pad to 4-byte boundary");
         $display("");
-        $display(" Usage:");
-        $display("   packet pkt = new();");
-        $display("   pkt.randomize() with { pkt_kind == ETH_IPV4_TCP; };");
+        $display(" Manual option building:");
         $display("   pkt.outer_ipv4.options = ipv4_header::opt_record_route(9);");
         $display("   pkt.do_pack();  // ihl auto-updates to account for options");
-        $display("");
-        $display(" Source Route:");
-        $display("   bit [31:0] hops[$] = '{32'hC0A80001, 32'hC0A80002, 32'hC0A80003};");
-        $display("   pkt.outer_ipv4.options = ipv4_header::opt_loose_source_route(hops);");
         $display("============================================================================");
     endfunction
 

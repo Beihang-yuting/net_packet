@@ -18,6 +18,18 @@ class tcp_header extends protocol_base;
     rand bit [15:0] checksum;
     rand bit [15:0] urgent_ptr;
 
+    // ----- TCP Option rand controls -----
+    // Enable flags (soft default: disabled)
+    rand bit        opt_mss_en;
+    rand bit        opt_wscale_en;
+    rand bit        opt_sack_perm_en;
+    rand bit        opt_ts_en;
+    // Option values
+    rand bit [15:0] opt_mss_val;
+    rand bit [7:0]  opt_wscale_val;
+    rand bit [31:0] opt_ts_val;
+    rand bit [31:0] opt_ts_ecr;
+
     // Flag bit positions within the 9-bit flags field
     // flags[8]=NS, [7]=CWR, [6]=ECE, [5]=URG, [4]=ACK, [3]=PSH, [2]=RST, [1]=SYN, [0]=FIN
 
@@ -26,6 +38,17 @@ class tcp_header extends protocol_base;
         soft dst_port inside {[1:65535]};
         soft reserved == 0;
         soft window_size == 16'hFFFF;
+    }
+
+    constraint c_opt_default {
+        soft opt_mss_en      == 0;
+        soft opt_wscale_en   == 0;
+        soft opt_sack_perm_en == 0;
+        soft opt_ts_en       == 0;
+        soft opt_mss_val     == 16'd1460;
+        soft opt_wscale_val  inside {[0:14]};
+        soft opt_ts_val      == 0;
+        soft opt_ts_ecr      == 0;
     }
 
     function new();
@@ -40,6 +63,14 @@ class tcp_header extends protocol_base;
         window_size  = 16'hFFFF;
         checksum     = 0;
         urgent_ptr   = 0;
+        opt_mss_en      = 0;
+        opt_wscale_en   = 0;
+        opt_sack_perm_en = 0;
+        opt_ts_en       = 0;
+        opt_mss_val     = 16'd1460;
+        opt_wscale_val  = 8'd7;
+        opt_ts_val      = 0;
+        opt_ts_ecr      = 0;
     endfunction
 
     static function tcp_header create(bit [15:0] sp = 0, bit [15:0] dp = 0,
@@ -140,8 +171,64 @@ class tcp_header extends protocol_base;
                 default: ;
             endcase
         end
+        // Auto-build options from rand enable/value fields
+        build_options_from_fields();
         data_offset = 5 + options.size() / 4;
         checksum = 0;
+    endfunction
+
+    // Build options[] byte array from rand opt_xxx_en/val fields
+    protected function void build_options_from_fields();
+        // Only rebuild if any option is enabled AND options is currently empty
+        // (if user manually set options, don't overwrite)
+        if (!opt_mss_en && !opt_wscale_en && !opt_sack_perm_en && !opt_ts_en) begin
+            // No options enabled — if options was set manually, keep it
+            return;
+        end
+
+        options.delete();
+
+        // MSS (Kind=2, Len=4) — 4 bytes
+        if (opt_mss_en) begin
+            options.push_back(8'd2);
+            options.push_back(8'd4);
+            options.push_back(opt_mss_val[15:8]);
+            options.push_back(opt_mss_val[7:0]);
+        end
+
+        // SACK Permitted (Kind=4, Len=2) — 2 bytes
+        if (opt_sack_perm_en) begin
+            options.push_back(8'd4);
+            options.push_back(8'd2);
+        end
+
+        // Timestamps (Kind=8, Len=10) — need NOP+NOP before for 4-byte alignment
+        if (opt_ts_en) begin
+            options.push_back(8'd1);  // NOP
+            options.push_back(8'd1);  // NOP
+            options.push_back(8'd8);
+            options.push_back(8'd10);
+            options.push_back(opt_ts_val[31:24]);
+            options.push_back(opt_ts_val[23:16]);
+            options.push_back(opt_ts_val[15:8]);
+            options.push_back(opt_ts_val[7:0]);
+            options.push_back(opt_ts_ecr[31:24]);
+            options.push_back(opt_ts_ecr[23:16]);
+            options.push_back(opt_ts_ecr[15:8]);
+            options.push_back(opt_ts_ecr[7:0]);
+        end
+
+        // Window Scale (Kind=3, Len=3) — need NOP before for alignment
+        if (opt_wscale_en) begin
+            options.push_back(8'd1);  // NOP
+            options.push_back(8'd3);
+            options.push_back(8'd3);
+            options.push_back(opt_wscale_val);
+        end
+
+        // Pad to 4-byte boundary with EOL
+        while (options.size() % 4 != 0)
+            options.push_back(8'd0);
     endfunction
 
     virtual function protocol_base clone();
@@ -157,6 +244,14 @@ class tcp_header extends protocol_base;
         h.checksum    = checksum;
         h.urgent_ptr  = urgent_ptr;
         h.options     = options;
+        h.opt_mss_en      = opt_mss_en;
+        h.opt_wscale_en   = opt_wscale_en;
+        h.opt_sack_perm_en = opt_sack_perm_en;
+        h.opt_ts_en       = opt_ts_en;
+        h.opt_mss_val     = opt_mss_val;
+        h.opt_wscale_val  = opt_wscale_val;
+        h.opt_ts_val      = opt_ts_val;
+        h.opt_ts_ecr      = opt_ts_ecr;
         h.auto_calc   = auto_calc;
         return h;
     endfunction
@@ -322,7 +417,28 @@ class tcp_header extends protocol_base;
         $display(" TCP Options Construction Guide");
         $display("============================================================================");
         $display("");
-        $display(" Available Options:");
+        $display(" Usage with randomize (recommended):");
+        $display("   pkt.randomize() with {");
+        $display("       pkt_kind == ETH_IPV4_TCP;");
+        $display("       tcp.opt_mss_en      == 1;        // enable MSS");
+        $display("       tcp.opt_mss_val     == 16'd1460; // MSS value");
+        $display("       tcp.opt_wscale_en   == 1;        // enable Window Scale");
+        $display("       tcp.opt_wscale_val  == 8'd7;     // shift count");
+        $display("       tcp.opt_ts_en       == 1;        // enable Timestamps");
+        $display("       tcp.opt_ts_val      == 32'h1234; // TSval");
+        $display("       tcp.opt_sack_perm_en == 1;       // enable SACK Permitted");
+        $display("   };");
+        $display("   // options auto-built, data_offset auto-computed");
+        $display("");
+        $display(" Error testing (override soft defaults):");
+        $display("   pkt.randomize() with {");
+        $display("       tcp.opt_mss_en  == 1;");
+        $display("       tcp.opt_mss_val == 0;  // invalid MSS=0");
+        $display("       tcp.opt_wscale_en  == 1;");
+        $display("       tcp.opt_wscale_val == 20; // invalid scale > 14");
+        $display("   };");
+        $display("");
+        $display(" Available static helpers (manual approach):");
         $display("   opt_mss(1460)                          — MSS (Kind=2, 4B)");
         $display("   opt_window_scale(7)                    — Window Scale (Kind=3, 3B)");
         $display("   opt_sack_permitted()                   — SACK Permitted (Kind=4, 2B)");
@@ -333,16 +449,6 @@ class tcp_header extends protocol_base;
         $display("   build_options(raw_bytes)               — Pad to 4-byte boundary");
         $display("   opt_syn_default(mss, wscale, ts, tsr)  — Common SYN options combo");
         $display("");
-        $display(" Usage with randomize:");
-        $display("   packet pkt = new();");
-        $display("   pkt.randomize() with {");
-        $display("       pkt_kind == ETH_IPV4_TCP;");
-        $display("       tcp.flags[1] == 1;  // SYN");
-        $display("   };");
-        $display("   // After randomize, set options (modifies packed header):");
-        $display("   pkt.tcp.options = tcp_header::opt_syn_default(1460, 7);");
-        $display("   pkt.do_pack();  // re-pack with options");
-        $display("");
         $display(" Manual option building:");
         $display("   byte unsigned opts[$];");
         $display("   byte unsigned tmp[$];");
@@ -352,10 +458,6 @@ class tcp_header extends protocol_base;
         $display("   foreach (tmp[i]) opts.push_back(tmp[i]);");
         $display("   pkt.tcp.options = tcp_header::build_options(opts);");
         $display("   pkt.do_pack();");
-        $display("");
-        $display(" Common SYN options (20 bytes, padded to 24):");
-        $display("   MSS(1460) + SACK-Perm + NOP+NOP+Timestamps + NOP+WScale(7)");
-        $display("   pkt.tcp.options = tcp_header::opt_syn_default();");
         $display("============================================================================");
     endfunction
 
