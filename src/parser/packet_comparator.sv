@@ -201,14 +201,14 @@ class packet_comparator;
     function string diff_to_string(diff_entry_t diffs[$]);
         string s = "";
         if (diffs.size() == 0) begin
-            s = "COMPARE RESULT: IDENTICAL\n";
+            s = "COMPARE RESULT: PASS — packets are identical\n";
         end else begin
-            s = $sformatf("COMPARE RESULT: %0d DIFFERENCE(S) FOUND\n", diffs.size());
+            s = $sformatf("COMPARE RESULT: FAIL — %0d difference(s) found\n", diffs.size());
             s = {s, "---------------------------------------------------------------\n"};
             foreach (diffs[i]) begin
-                s = {s, $sformatf("  [%s] %s\n", diffs[i].layer.name(), diffs[i].field_name)};
-                s = {s, $sformatf("      pkt_a: %s\n", diffs[i].val_a)};
-                s = {s, $sformatf("      pkt_b: %s\n", diffs[i].val_b)};
+                s = {s, $sformatf("  ERROR [%s] %s\n", diffs[i].layer.name(), diffs[i].field_name)};
+                s = {s, $sformatf("      expect: %s\n", diffs[i].val_a)};
+                s = {s, $sformatf("      actual: %s\n", diffs[i].val_b)};
             end
             s = {s, "---------------------------------------------------------------\n"};
         end
@@ -216,16 +216,17 @@ class packet_comparator;
     endfunction
 
     // Convenience: compare and print in one call
-    function string compare_and_print(packet a, packet b);
+    // Returns 1 if identical, 0 if different
+    function bit compare_and_print(packet a, packet b);
         diff_entry_t diffs[$];
         string s = "";
         compare(a, b, diffs);
-        // Print both packets' brief first
-        s = {s, $sformatf("PKT_A: %s\n", a.to_brief())};
-        s = {s, $sformatf("PKT_B: %s\n", b.to_brief())};
+        s = {s, $sformatf("PKT_A (expect): %s\n", a.to_brief())};
+        s = {s, $sformatf("PKT_B (actual): %s\n", b.to_brief())};
         s = {s, "\n"};
         s = {s, diff_to_string(diffs)};
-        return s;
+        $display("%s", s);
+        return (diffs.size() == 0);
     endfunction
 
 endclass
