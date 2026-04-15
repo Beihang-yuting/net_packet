@@ -54,7 +54,7 @@ class template_registry;
     // separator. If the token is at the end of the string (no trailing '_'),
     // pos overshoots past len and the while loop exits. This is correct.
     // =========================================================================
-    protected function protocol_type_e parse_template_name(string name);
+    function protocol_type_e parse_template_name(string name);
         protocol_type_e chain[$];
         int pos = 0;
         int len = name.len();

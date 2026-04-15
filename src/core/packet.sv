@@ -498,12 +498,21 @@ class packet;
 
     // =========================================================================
     // set_chain — specify custom protocol chain for abnormal/error packets
+    // Accepts a string using the same naming as templates.
     // Overrides pkt_kind when set. Call before randomize().
+    //
+    // Usage:
+    //   pkt.set_chain("ETH_ETH_IPV4");        // double Ethernet
+    //   pkt.set_chain("ETH_TCP");              // skip IP layer
+    //   pkt.set_chain("ETH_IPV4_IPV4_TCP");   // double IPv4
+    //   pkt.set_chain("ETH_IPV4_UDP_VXLAN_ETH_IPV6_SCTP");  // custom tunnel
     // =========================================================================
-    function void set_chain(protocol_type_e chain[$]);
-        custom_chain     = chain;
+    function void set_chain(string chain_str);
+        custom_chain     = s_registry.parse_template_name(chain_str);
         use_custom_chain = 1;
-        force_mode       = 1;  // Custom chains bypass protocol graph validation
+        force_mode       = 1;
+        if (custom_chain.size() == 0)
+            $warning("packet::set_chain: failed to parse '%s'", chain_str);
     endfunction
 
     // clear_chain — revert to pkt_kind template mode
@@ -565,7 +574,9 @@ class packet;
         $display("    // Call rocev2_bth::help() for full opcode table");
         $display("");
         $display(" 6. ERROR/ABNORMAL PACKET:");
-        $display("    pkt.set_chain('{PROTO_ETHERNET, PROTO_TCP});  // skip IP");
+        $display("    pkt.set_chain(\"ETH_TCP\");              // skip IP layer");
+        $display("    pkt.set_chain(\"ETH_ETH_IPV4\");         // double Ethernet");
+        $display("    pkt.set_chain(\"ETH_IPV4_IPV4_TCP\");    // double IPv4");
         $display("    pkt.randomize() with { tcp.dst_port == 80; };");
         $display("    pkt.clear_chain();  // revert to normal");
         $display("");
