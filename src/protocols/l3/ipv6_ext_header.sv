@@ -30,12 +30,29 @@ class ipv6_hbh_header extends protocol_base;
     rand bit [7:0]        hdr_ext_len;
     byte unsigned         options[];   // type-specific data (default: 6 padding bytes)
 
+    // ----- HBH Option rand controls -----
+    rand bit        opt_router_alert_en;
+    rand bit [15:0] opt_router_alert_val;  // 0=MLD, 1=RSVP, 2=Active Networks
+    rand bit        opt_jumbo_en;
+    rand bit [31:0] opt_jumbo_len;         // Jumbo payload length
+
+    constraint c_opt_ctrl {
+        soft opt_router_alert_en  == 0;
+        soft opt_router_alert_val == 0;  // MLD
+        soft opt_jumbo_en         == 0;
+        soft opt_jumbo_len inside {[65536:32'hFFFFFFFF]};
+    }
+
     function new();
         proto_type  = PROTO_IPV6_HBH;
         next_header = 8'd59; // No Next Header
         hdr_ext_len = 8'd0;
         options     = new[6];
         foreach (options[i]) options[i] = 8'h00;
+        opt_router_alert_en  = 0;
+        opt_router_alert_val = 0;
+        opt_jumbo_en         = 0;
+        opt_jumbo_len        = 32'd65536;
     endfunction
 
     static function ipv6_hbh_header create(bit [7:0] nh = 8'd59, bit [7:0] ext_len = 8'd0);
@@ -86,6 +103,34 @@ class ipv6_hbh_header extends protocol_base;
 
     virtual function void calc_fields(byte unsigned payload_data[$], protocol_type_e next_proto);
         if (!auto_calc) return;
+        // Auto-build options from rand fields
+        if (opt_router_alert_en || opt_jumbo_en) begin
+            options.delete();
+            if (opt_router_alert_en) begin
+                // Router Alert: type=5, len=2, value(16-bit)
+                options.push_back(8'd5);
+                options.push_back(8'd2);
+                options.push_back(opt_router_alert_val[15:8]);
+                options.push_back(opt_router_alert_val[7:0]);
+            end
+            if (opt_jumbo_en) begin
+                // Jumbo Payload: type=0xC2, len=4, value(32-bit)
+                options.push_back(8'hC2);
+                options.push_back(8'd4);
+                options.push_back(opt_jumbo_len[31:24]);
+                options.push_back(opt_jumbo_len[23:16]);
+                options.push_back(opt_jumbo_len[15:8]);
+                options.push_back(opt_jumbo_len[7:0]);
+            end
+            // Pad to make total (2 + options.size()) multiple of 8
+            begin
+                int total = 2 + options.size();
+                while (total % 8 != 0) begin
+                    options.push_back(8'd0);
+                    total++;
+                end
+            end
+        end
         // Auto-compute hdr_ext_len: total = (hdr_ext_len+1)*8, minus 2 bytes for next_header+hdr_ext_len = options
         // So hdr_ext_len = (2 + options.size() + padding) / 8 - 1
         begin
@@ -98,11 +143,15 @@ class ipv6_hbh_header extends protocol_base;
 
     virtual function protocol_base clone();
         ipv6_hbh_header h = new();
-        h.next_header = next_header;
-        h.hdr_ext_len = hdr_ext_len;
-        h.options     = new[options.size()];
+        h.next_header            = next_header;
+        h.hdr_ext_len            = hdr_ext_len;
+        h.options                = new[options.size()];
         foreach (options[i]) h.options[i] = options[i];
-        h.auto_calc   = auto_calc;
+        h.opt_router_alert_en    = opt_router_alert_en;
+        h.opt_router_alert_val   = opt_router_alert_val;
+        h.opt_jumbo_en           = opt_jumbo_en;
+        h.opt_jumbo_len          = opt_jumbo_len;
+        h.auto_calc              = auto_calc;
         return h;
     endfunction
 
@@ -381,12 +430,26 @@ class ipv6_dest_header extends protocol_base;
     rand bit [7:0]        hdr_ext_len;
     byte unsigned         options[];   // type-specific data (default: 6 padding bytes)
 
+    // ----- Dest Option rand controls -----
+    rand bit        opt_custom_en;
+    rand bit [7:0]  opt_custom_type;
+    rand bit [31:0] opt_custom_data;
+
+    constraint c_opt_ctrl {
+        soft opt_custom_en   == 0;
+        soft opt_custom_type == 8'h1E;  // RFC 6553 RPL Option (common dest option)
+        soft opt_custom_data == 32'h0;
+    }
+
     function new();
         proto_type  = PROTO_IPV6_DEST;
-        next_header = 8'd59;
-        hdr_ext_len = 8'd0;
-        options     = new[6];
+        next_header      = 8'd59;
+        hdr_ext_len      = 8'd0;
+        options          = new[6];
         foreach (options[i]) options[i] = 8'h00;
+        opt_custom_en    = 0;
+        opt_custom_type  = 8'h1E;
+        opt_custom_data  = 32'h0;
     endfunction
 
     static function ipv6_dest_header create(bit [7:0] nh = 8'd59, bit [7:0] ext_len = 8'd0);
@@ -435,6 +498,25 @@ class ipv6_dest_header extends protocol_base;
 
     virtual function void calc_fields(byte unsigned payload_data[$], protocol_type_e next_proto);
         if (!auto_calc) return;
+        // Auto-build options from rand fields
+        if (opt_custom_en) begin
+            options.delete();
+            // Custom option: type(1) + len(1) + data(4) = 6 bytes
+            options.push_back(opt_custom_type);
+            options.push_back(8'd4);  // 4 bytes of data
+            options.push_back(opt_custom_data[31:24]);
+            options.push_back(opt_custom_data[23:16]);
+            options.push_back(opt_custom_data[15:8]);
+            options.push_back(opt_custom_data[7:0]);
+            // Pad to make total (2 + options.size()) multiple of 8
+            begin
+                int total = 2 + options.size();
+                while (total % 8 != 0) begin
+                    options.push_back(8'd0);
+                    total++;
+                end
+            end
+        end
         // Auto-compute hdr_ext_len: same as HBH
         begin
             int total_opt_len = options.size();
@@ -446,11 +528,14 @@ class ipv6_dest_header extends protocol_base;
 
     virtual function protocol_base clone();
         ipv6_dest_header h = new();
-        h.next_header = next_header;
-        h.hdr_ext_len = hdr_ext_len;
-        h.options     = new[options.size()];
+        h.next_header     = next_header;
+        h.hdr_ext_len     = hdr_ext_len;
+        h.options         = new[options.size()];
         foreach (options[i]) h.options[i] = options[i];
-        h.auto_calc   = auto_calc;
+        h.opt_custom_en   = opt_custom_en;
+        h.opt_custom_type = opt_custom_type;
+        h.opt_custom_data = opt_custom_data;
+        h.auto_calc       = auto_calc;
         return h;
     endfunction
 

@@ -31,6 +31,10 @@ class gtp_u_header extends protocol_base;
     rand bit [7:0]  n_pdu_number;
     rand bit [7:0]  next_ext_hdr_type;
 
+    // ----- GTP-U Extension Header rand control -----
+    rand bit [7:0]  ext_hdr_type;     // Extension header type (e.g. 0x85=PDU Session Container)
+    rand byte unsigned ext_hdr_data[4]; // Extension header content (4 bytes)
+
     constraint c_default {
         soft version      == 3'b001;
         soft pt           == 1'b1;
@@ -39,6 +43,10 @@ class gtp_u_header extends protocol_base;
         soft s_flag       == 1'b0;
         soft pn_flag      == 1'b0;
         soft message_type == 8'hFF;
+    }
+
+    constraint c_ext_hdr {
+        soft ext_hdr_type == 8'h85;   // PDU Session Container (most common in 5G)
     }
 
     function new();
@@ -55,6 +63,8 @@ class gtp_u_header extends protocol_base;
         sequence_number  = 16'd0;
         n_pdu_number     = 8'd0;
         next_ext_hdr_type = 8'd0;
+        ext_hdr_type = 8'h85;
+        foreach (ext_hdr_data[i]) ext_hdr_data[i] = 0;
     endfunction
 
     static function gtp_u_header create(bit [31:0] t = 32'd0);
@@ -68,7 +78,9 @@ class gtp_u_header extends protocol_base;
     endfunction
 
     virtual function int get_header_length();
-        return has_optional_fields() ? 12 : 8;
+        int len = has_optional_fields() ? 12 : 8;
+        if (e_flag && next_ext_hdr_type != 0) len += 8;  // extension header
+        return len;
     endfunction
 
     virtual function void pack_header(ref byte unsigned data[$]);
@@ -82,6 +94,15 @@ class gtp_u_header extends protocol_base;
             packet_utils::pack_bytes_16(data, sequence_number);
             data.push_back(n_pdu_number);
             data.push_back(next_ext_hdr_type);
+        end
+        // Extension header (when e_flag set and next_ext_hdr_type != 0)
+        if (e_flag && next_ext_hdr_type != 0) begin
+            // Length in 4-byte units: 1(len) + 4(data) + padding + 1(next_type) = 8 bytes = 2 units
+            data.push_back(8'd2);  // length = 2 (in 4-byte units)
+            foreach (ext_hdr_data[i]) data.push_back(ext_hdr_data[i]);
+            data.push_back(8'd0);  // padding
+            data.push_back(8'd0);  // padding
+            data.push_back(8'd0);  // next extension header type = 0 (no more)
         end
     endfunction
 
@@ -102,12 +123,24 @@ class gtp_u_header extends protocol_base;
             n_pdu_number      = data[offset]; offset++;
             next_ext_hdr_type = data[offset]; offset++;
         end
+        if (e_flag && next_ext_hdr_type != 0 && offset < data.size()) begin
+            int ext_len = data[offset]; offset++;  // length in 4-byte units
+            int ext_bytes = ext_len * 4 - 2;  // minus length byte and next_type byte
+            for (int i = 0; i < 4 && i < ext_bytes; i++) begin
+                ext_hdr_data[i] = data[offset]; offset++;
+            end
+            // Skip remaining bytes
+            for (int i = 4; i < ext_bytes; i++) offset++;
+            // Read next extension header type
+            if (offset < data.size()) offset++;  // next_ext_hdr_type (already have it)
+        end
     endfunction
 
     virtual function void calc_fields(byte unsigned payload_data[$], protocol_type_e next_proto);
         if (!auto_calc) return;
         length = payload_data.size();
         if (has_optional_fields()) length += 4;
+        if (e_flag && next_ext_hdr_type != 0) length += 8;  // extension header
     endfunction
 
     virtual function protocol_base clone();
@@ -124,6 +157,8 @@ class gtp_u_header extends protocol_base;
         h.sequence_number   = sequence_number;
         h.n_pdu_number      = n_pdu_number;
         h.next_ext_hdr_type = next_ext_hdr_type;
+        h.ext_hdr_type      = ext_hdr_type;
+        foreach (ext_hdr_data[i]) h.ext_hdr_data[i] = ext_hdr_data[i];
         h.auto_calc         = auto_calc;
         return h;
     endfunction

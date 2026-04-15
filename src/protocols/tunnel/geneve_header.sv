@@ -16,6 +16,19 @@ class geneve_header extends protocol_base;
     rand bit [7:0]  reserved1;
     byte unsigned   options[];
 
+    // ----- Geneve Option rand controls -----
+    rand bit        opt_en;          // Enable auto-generating options
+    rand bit [1:0]  opt_num;         // Number of TLV options to generate (0-3)
+    rand bit [15:0] opt_class0;      // Option 0 class
+    rand bit [6:0]  opt_type0;       // Option 0 type (7-bit, bit7=critical auto 0)
+    rand bit [31:0] opt_data0;       // Option 0 data (4 bytes)
+    rand bit [15:0] opt_class1;
+    rand bit [6:0]  opt_type1;
+    rand bit [31:0] opt_data1;
+    rand bit [15:0] opt_class2;
+    rand bit [6:0]  opt_type2;
+    rand bit [31:0] opt_data2;
+
     constraint c_default {
         soft version   == 2'h0;
         soft o_flag    == 1'b0;
@@ -23,6 +36,15 @@ class geneve_header extends protocol_base;
         soft reserved0 == 6'h0;
         soft reserved1 == 8'h0;
         soft opt_len   == 6'h0;
+    }
+
+    constraint c_opt_ctrl {
+        soft opt_en   == 0;
+        soft opt_num  == 0;
+        soft opt_class0 == 16'h0100;  // Linux
+        soft opt_class1 == 16'h0100;
+        soft opt_class2 == 16'h0100;
+        opt_num inside {[0:3]};
     }
 
     function new();
@@ -36,6 +58,10 @@ class geneve_header extends protocol_base;
         vni           = 24'd100;
         reserved1     = 8'h0;
         options       = new[0];
+        opt_en = 0; opt_num = 0;
+        opt_class0 = 16'h0100; opt_type0 = 0; opt_data0 = 0;
+        opt_class1 = 16'h0100; opt_type1 = 0; opt_data1 = 0;
+        opt_class2 = 16'h0100; opt_type2 = 0; opt_data2 = 0;
     endfunction
 
     virtual function void pack_header(ref byte unsigned data[$]);
@@ -83,6 +109,28 @@ class geneve_header extends protocol_base;
 
     virtual function void calc_fields(byte unsigned payload_data[$], protocol_type_e next_proto);
         if (!auto_calc) return;
+        // Auto-build options from rand fields
+        if (opt_en && opt_num > 0) begin
+            options.delete();
+            if (opt_num >= 1) begin  // TLV 0: class(2) + type(1) + R+len(1) + data(4) = 8 bytes
+                options.push_back(opt_class0[15:8]); options.push_back(opt_class0[7:0]);
+                options.push_back({1'b0, opt_type0}); options.push_back({3'b000, 5'd1}); // len=1 (4 bytes)
+                options.push_back(opt_data0[31:24]); options.push_back(opt_data0[23:16]);
+                options.push_back(opt_data0[15:8]);  options.push_back(opt_data0[7:0]);
+            end
+            if (opt_num >= 2) begin
+                options.push_back(opt_class1[15:8]); options.push_back(opt_class1[7:0]);
+                options.push_back({1'b0, opt_type1}); options.push_back({3'b000, 5'd1});
+                options.push_back(opt_data1[31:24]); options.push_back(opt_data1[23:16]);
+                options.push_back(opt_data1[15:8]);  options.push_back(opt_data1[7:0]);
+            end
+            if (opt_num >= 3) begin
+                options.push_back(opt_class2[15:8]); options.push_back(opt_class2[7:0]);
+                options.push_back({1'b0, opt_type2}); options.push_back({3'b000, 5'd1});
+                options.push_back(opt_data2[31:24]); options.push_back(opt_data2[23:16]);
+                options.push_back(opt_data2[15:8]);  options.push_back(opt_data2[7:0]);
+            end
+        end
         opt_len = options.size() / 4;
         case (next_proto)
             PROTO_ETHERNET: protocol_type = 16'h6558;
@@ -103,6 +151,17 @@ class geneve_header extends protocol_base;
         h.vni           = vni;
         h.reserved1     = reserved1;
         h.options       = new[options.size()](options);
+        h.opt_en        = opt_en;
+        h.opt_num       = opt_num;
+        h.opt_class0    = opt_class0;
+        h.opt_type0     = opt_type0;
+        h.opt_data0     = opt_data0;
+        h.opt_class1    = opt_class1;
+        h.opt_type1     = opt_type1;
+        h.opt_data1     = opt_data1;
+        h.opt_class2    = opt_class2;
+        h.opt_type2     = opt_type2;
+        h.opt_data2     = opt_data2;
         h.auto_calc     = auto_calc;
         return h;
     endfunction
