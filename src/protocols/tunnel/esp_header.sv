@@ -89,6 +89,11 @@ class esp_header extends protocol_base;
         return $sformatf("ESP spi:0x%08x seq:%0d", spi, sequence_number);
     endfunction
 
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        if (spi == 0)
+            warnings.push_back("ESP: SPI=0 (reserved, implementation specific)");
+    endfunction
+
 endclass
 
 `endif // ESP_HEADER_SV

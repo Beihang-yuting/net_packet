@@ -412,6 +412,35 @@ class tcp_header extends protocol_base;
     endfunction
 
     // help — print TCP options usage guide
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        // data_offset
+        if (data_offset < 5)
+            errors.push_back($sformatf("TCP: data_offset=%0d < 5 (minimum)", data_offset));
+        if (data_offset != 5 + options.size() / 4)
+            errors.push_back($sformatf("TCP: data_offset=%0d inconsistent with options size=%0d (expected %0d)",
+                             data_offset, options.size(), 5 + options.size() / 4));
+        // Options 4-byte aligned
+        if (options.size() % 4 != 0)
+            errors.push_back($sformatf("TCP: options size=%0d not 4-byte aligned", options.size()));
+        // Reserved bits
+        if (reserved != 0)
+            warnings.push_back($sformatf("TCP: reserved=%0d, should be 0", reserved));
+        // SYN + FIN
+        if (flags[1] && flags[0])
+            warnings.push_back("TCP: SYN+FIN both set (unusual, possible attack)");
+        // SYN + RST
+        if (flags[1] && flags[2])
+            warnings.push_back("TCP: SYN+RST both set (invalid combination)");
+        // Port 0
+        if (src_port == 0)
+            warnings.push_back("TCP: src_port=0");
+        if (dst_port == 0)
+            warnings.push_back("TCP: dst_port=0");
+        // URG flag without urgent pointer
+        if (flags[5] && urgent_ptr == 0)
+            warnings.push_back("TCP: URG flag set but urgent_ptr=0");
+    endfunction
+
     static function void help();
         $display("============================================================================");
         $display(" TCP Options Construction Guide");

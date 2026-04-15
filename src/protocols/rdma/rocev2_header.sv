@@ -603,6 +603,15 @@ class rocev2_bth extends protocol_base;
         $display("============================================================================");
     endfunction
 
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        // Pad count should be 0-3
+        if (pad_count > 3)
+            errors.push_back($sformatf("RoCEv2 BTH: pad_count=%0d > 3", pad_count));
+        // Destination QP
+        if (dest_qp == 0)
+            warnings.push_back("RoCEv2 BTH: dest_qp=0");
+    endfunction
+
 endclass
 
 `endif // ROCEV2_HEADER_SV

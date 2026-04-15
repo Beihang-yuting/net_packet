@@ -90,6 +90,13 @@ class sctp_header extends protocol_base;
                          src_port, dst_port, verification_tag);
     endfunction
 
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        if (src_port == 0)
+            warnings.push_back("SCTP: src_port=0");
+        if (dst_port == 0)
+            warnings.push_back("SCTP: dst_port=0");
+    endfunction
+
 endclass
 
 `endif // SCTP_HEADER_SV

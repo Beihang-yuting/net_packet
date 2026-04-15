@@ -65,5 +65,10 @@ test_traffic_stream: test/test_traffic_stream.sv
 
 test_all: test_protocol_headers test_protocol_graph test_packet_builder test_tunnel_headers test_tunnel_packet test_rdma_storage_headers test_rdma_storage_packet test_phase2c_headers test_phase2c_packet test_parser test_pcap test_ip_fragment test_protocol_sequences test_traffic_stream
 
+# CLI help tool (standalone C program, no simulator needed)
+pkt_help: tools/pkt_help.c
+	gcc -o pkt_help tools/pkt_help.c -Wall -O2
+	@echo "Built: ./pkt_help  (run './pkt_help' for usage)"
+
 clean:
-	rm -rf simv_* csrc *.log *.vpd *.fsdb work transcript *.wlf DVEfiles
+	rm -rf simv_* csrc *.log *.vpd *.fsdb work transcript *.wlf DVEfiles pkt_help

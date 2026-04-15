@@ -139,6 +139,159 @@ program test_parser;
             check("comparator: layer diff detected", diffs.size() > 0);
         end
 
+        // ---- Verify: valid packet with verify_en ----
+        begin
+            protocol_parser parser = new();
+            packet pkt = new();
+            parse_result_t result;
+
+            parser.verify_en = 1;  // Enable field verification
+
+            pkt.randomize() with {
+                pkt_kind == ETH_IPV4_TCP;
+                pkt_len == 100;
+            };
+
+            result = parser.validate(pkt);
+            check("verify_en: valid packet passes", result.valid == 1);
+            $display("  verify result: %s", parser.result_to_string(result));
+        end
+
+        // ---- Verify: detect bad IPv4 version ----
+        begin
+            protocol_parser parser = new();
+            packet pkt = new();
+            parse_result_t result;
+
+            parser.verify_en = 1;
+
+            pkt.randomize() with {
+                pkt_kind == ETH_IPV4_TCP;
+                pkt_len == 100;
+            };
+
+            // Corrupt IPv4 version
+            begin
+                ipv4_header ip4 = pkt.get_ipv4(0);
+                ip4.version = 5;  // Wrong version
+            end
+
+            result = parser.validate(pkt);
+            check("verify_en: bad IPv4 version detected", result.valid == 0);
+            $display("  verify result: %s", parser.result_to_string(result));
+        end
+
+        // ---- Verify: detect bad TCP flags ----
+        begin
+            protocol_parser parser = new();
+            packet pkt = new();
+            parse_result_t result;
+
+            parser.verify_en = 1;
+
+            pkt.randomize() with {
+                pkt_kind == ETH_IPV4_TCP;
+                pkt_len == 100;
+            };
+
+            // Set SYN+FIN (unusual)
+            begin
+                tcp_header tcp = pkt.get_tcp(0);
+                tcp.flags = 9'b000000011;  // SYN+FIN
+            end
+
+            result = parser.validate(pkt);
+            check("verify_en: SYN+FIN warning", result.warnings.size() > 0);
+            $display("  verify result: %s", parser.result_to_string(result));
+        end
+
+        // ---- Verify: detect bad IPv4 checksum ----
+        begin
+            protocol_parser parser = new();
+            packet pkt = new();
+            parse_result_t result;
+
+            parser.verify_en = 1;
+
+            pkt.randomize() with {
+                pkt_kind == ETH_IPV4_UDP;
+                pkt_len == 80;
+            };
+
+            // Corrupt IPv4 checksum
+            begin
+                ipv4_header ip4 = pkt.get_ipv4(0);
+                ip4.header_checksum = 16'hDEAD;
+            end
+
+            result = parser.validate(pkt);
+            check("verify_en: bad IPv4 checksum detected", result.valid == 0);
+            $display("  verify result: %s", parser.result_to_string(result));
+        end
+
+        // ---- Verify: tunnel packet full verification ----
+        begin
+            protocol_parser parser = new();
+            packet pkt = new();
+            parse_result_t result;
+
+            parser.verify_en = 1;
+
+            pkt.randomize() with {
+                pkt_kind == ETH_IPV4_UDP_VXLAN_ETH_IPV4_TCP;
+                pkt_len == 200;
+            };
+
+            result = parser.validate(pkt);
+            check("verify_en: tunnel packet valid", result.valid == 1);
+            $display("  verify result: %s", parser.result_to_string(result));
+        end
+
+        // ---- Verify: parse and verify round-trip ----
+        begin
+            protocol_parser parser = new();
+            packet pkt = new();
+            packet parsed;
+            parse_result_t result;
+
+            parser.verify_en = 1;
+
+            pkt.randomize() with {
+                pkt_kind == ETH_IPV4_TCP;
+                pkt_len == 120;
+            };
+
+            // Parse from raw bytes and verify
+            parsed = parser.parse(pkt.raw_data);
+            result = parser.validate(parsed);
+            check("verify_en: parse+verify round-trip", result.valid == 1);
+
+            // Compare original and parsed
+            begin
+                packet_comparator comp = new();
+                bit pass = comp.compare_and_print(pkt, parsed);
+                check("verify_en: round-trip compare", pass == 1);
+            end
+        end
+
+        // ---- Verify: result_to_string output ----
+        begin
+            protocol_parser parser = new();
+            packet pkt = new();
+            parse_result_t result;
+
+            parser.verify_en = 1;
+
+            pkt.randomize() with {
+                pkt_kind == ETH_IPV6_UDP;
+                pkt_len == 100;
+            };
+
+            result = parser.validate(pkt);
+            check("verify_en: IPv6 packet valid", result.valid == 1);
+            $display("%s", parser.result_to_string(result));
+        end
+
         $display("=== Results: %0d passed, %0d failed ===", pass_count, fail_count);
         if (fail_count > 0) $fatal(1, "TESTS FAILED");
     end

@@ -159,6 +159,31 @@ class gre_header extends protocol_base;
     endfunction
 
     // help — print GRE options usage guide
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        // Version
+        if (version != 0)
+            errors.push_back($sformatf("GRE: version=%0d, expected 0", version));
+        // Reserved
+        if (reserved0 != 0)
+            warnings.push_back($sformatf("GRE: reserved0=0x%03x, should be 0", reserved0));
+        // C flag with checksum
+        if (c_flag && checksum == 0)
+            warnings.push_back("GRE: c_flag=1 but checksum=0");
+        // C flag checksum verification
+        if (c_flag && checksum != 0) begin
+            byte unsigned gre_data[$];
+            bit [15:0] saved_cksum = checksum;
+            bit [15:0] computed;
+            checksum = 0;
+            pack_header(gre_data);
+            computed = packet_utils::ones_complement_checksum(gre_data);
+            checksum = saved_cksum;
+            if (saved_cksum != computed)
+                warnings.push_back($sformatf("GRE: checksum=0x%04x, computed=0x%04x (may differ due to payload)",
+                                   saved_cksum, computed));
+        end
+    endfunction
+
     static function void help();
         $display("============================================================================");
         $display(" GRE Optional Fields Guide (RFC 2784/2890)");

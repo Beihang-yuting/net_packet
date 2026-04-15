@@ -19,6 +19,12 @@ virtual class protocol_base;
     pure virtual function string to_string();
     pure virtual function string to_brief();
 
+    // Verify protocol field correctness — override in subclasses
+    // Returns errors (hard violations) and warnings (suspicious but allowed)
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        // Default: no checks (leaf protocols without verify override)
+    endfunction
+
     function void print(int verbosity = 0);
         if (verbosity == 0)
             $display("  [%s] %s", proto_type.name(), to_brief());

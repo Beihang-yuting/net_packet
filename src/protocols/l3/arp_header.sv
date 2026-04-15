@@ -126,6 +126,19 @@ class arp_header extends protocol_base;
                          packet_utils::format_ipv4(target_ip));
     endfunction
 
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        if (hw_type != 1)
+            warnings.push_back($sformatf("ARP: hw_type=%0d, expected 1 (Ethernet)", hw_type));
+        if (proto_type != 16'h0800)
+            warnings.push_back($sformatf("ARP: proto_type=0x%04x, expected 0x0800 (IPv4)", proto_type));
+        if (hw_len != 6)
+            errors.push_back($sformatf("ARP: hw_len=%0d, expected 6 (MAC address)", hw_len));
+        if (proto_len != 4)
+            errors.push_back($sformatf("ARP: proto_len=%0d, expected 4 (IPv4 address)", proto_len));
+        if (opcode != 1 && opcode != 2)
+            warnings.push_back($sformatf("ARP: opcode=%0d, expected 1 (request) or 2 (reply)", opcode));
+    endfunction
+
 endclass
 
 `endif // ARP_HEADER_SV

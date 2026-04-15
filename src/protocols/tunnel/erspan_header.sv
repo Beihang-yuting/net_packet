@@ -121,6 +121,11 @@ class erspan_ii_header extends protocol_base;
         return $sformatf("ERSPAN-II sid:%0d vlan:%0d idx:0x%05x", session_id, vlan, index);
     endfunction
 
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        if (version != 1)
+            errors.push_back($sformatf("ERSPAN-II: version=%0d, expected 1", version));
+    endfunction
+
 endclass
 
 // ============================================================
@@ -271,6 +276,11 @@ class erspan_iii_header extends protocol_base;
     virtual function string to_brief();
         return $sformatf("ERSPAN-III sid:%0d vlan:%0d ts:0x%08x hw_id:%0d dir:%0d",
                          session_id, vlan, timestamp, hw_id, direction);
+    endfunction
+
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        if (version != 2)
+            errors.push_back($sformatf("ERSPAN-III: version=%0d, expected 2", version));
     endfunction
 
 endclass

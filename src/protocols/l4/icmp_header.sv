@@ -103,6 +103,25 @@ class icmp_header extends protocol_base;
                          icmp_type, icmp_code, identifier, sequence_num);
     endfunction
 
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        // ICMP checksum (covers entire ICMP message, no pseudo-header)
+        begin
+            byte unsigned icmp_data[$];
+            bit [15:0] saved_cksum = checksum;
+            bit [15:0] computed;
+            checksum = 0;
+            pack_header(icmp_data);
+            computed = packet_utils::ones_complement_checksum(icmp_data);
+            checksum = saved_cksum;
+            if (saved_cksum != 0 && saved_cksum != computed)
+                warnings.push_back($sformatf("ICMP: checksum=0x%04x, computed=0x%04x (may differ due to payload)",
+                                   saved_cksum, computed));
+        end
+        // Type/code validity
+        if (icmp_type > 18 && icmp_type < 30)
+            warnings.push_back($sformatf("ICMP: type=%0d is reserved/unassigned", icmp_type));
+    endfunction
+
 endclass
 
 `endif // ICMP_HEADER_SV

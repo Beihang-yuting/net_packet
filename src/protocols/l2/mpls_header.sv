@@ -86,6 +86,14 @@ class mpls_header extends protocol_base;
         return $sformatf("MPLS label:%0d tc:%0d s:%0d ttl:%0d", label, tc, s_bit, ttl);
     endfunction
 
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        if (ttl == 0)
+            warnings.push_back("MPLS: TTL=0 (packet will be dropped)");
+        // Reserved label range 0-15
+        if (label <= 15 && label != 0 && label != 3)
+            warnings.push_back($sformatf("MPLS: label=%0d is in reserved range (0-15)", label));
+    endfunction
+
 endclass
 
 `endif // MPLS_HEADER_SV

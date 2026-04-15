@@ -98,6 +98,19 @@ class eth_header extends protocol_base;
                          ethertype);
     endfunction
 
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        // Multicast source MAC
+        if (src_mac[40])
+            warnings.push_back($sformatf("Ethernet: src_mac %s is multicast (bit 40 set)",
+                               packet_utils::format_mac(src_mac)));
+        // Zero source MAC
+        if (src_mac == 0)
+            warnings.push_back("Ethernet: src_mac is all zeros");
+        // Unknown ethertype
+        if (ethertype < 16'h0600 && ethertype > 16'h05DC)
+            warnings.push_back($sformatf("Ethernet: ethertype=0x%04x in undefined range", ethertype));
+    endfunction
+
 endclass
 
 `endif // ETH_HEADER_SV

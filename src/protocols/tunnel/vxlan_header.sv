@@ -92,6 +92,20 @@ class vxlan_header extends protocol_base;
         return $sformatf("VXLAN vni:%0d flags:0x%02x", vni, flags);
     endfunction
 
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        // I flag (bit 3) must be set per RFC 7348
+        if (flags[3] != 1)
+            errors.push_back($sformatf("VXLAN: flags=0x%02x, I-bit (bit3) not set (required by RFC 7348)", flags));
+        // Reserved fields
+        if (reserved1 != 0)
+            warnings.push_back($sformatf("VXLAN: reserved1=0x%06x, should be 0", reserved1));
+        if (reserved2 != 0)
+            warnings.push_back($sformatf("VXLAN: reserved2=0x%02x, should be 0", reserved2));
+        // VNI range
+        if (vni == 0)
+            warnings.push_back("VXLAN: VNI=0");
+    endfunction
+
     static function void help();
         $display("============================================================================");
         $display(" VXLAN Header Guide (RFC 7348)");

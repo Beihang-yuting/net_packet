@@ -232,6 +232,17 @@ class gtp_u_header extends protocol_base;
     endfunction
 
     // help — print GTP-U usage guide
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        if (version != 1)
+            errors.push_back($sformatf("GTP-U: version=%0d, expected 1 (GTPv1)", version));
+        if (pt != 1)
+            warnings.push_back($sformatf("GTP-U: pt=%0d, expected 1 (GTP)", pt));
+        if (message_type != 8'hFF)
+            warnings.push_back($sformatf("GTP-U: message_type=0x%02x, T-PDU is 0xFF", message_type));
+        if (teid == 0)
+            warnings.push_back("GTP-U: TEID=0");
+    endfunction
+
     static function void help();
         $display("============================================================================");
         $display(" GTP-U Header Guide (3GPP TS 29.281)");

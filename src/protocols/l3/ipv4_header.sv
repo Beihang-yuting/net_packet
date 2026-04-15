@@ -372,6 +372,53 @@ class ipv4_header extends protocol_base;
     endfunction
 
     // help — print IPv4 options usage guide
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        // Version
+        if (version != 4)
+            errors.push_back($sformatf("IPv4: version=%0d, expected 4", version));
+        // IHL
+        if (ihl < 5)
+            errors.push_back($sformatf("IPv4: IHL=%0d < 5 (minimum)", ihl));
+        if (ihl != 5 + options.size() / 4)
+            errors.push_back($sformatf("IPv4: IHL=%0d inconsistent with options size=%0d (expected IHL=%0d)",
+                             ihl, options.size(), 5 + options.size() / 4));
+        // Options must be 4-byte aligned
+        if (options.size() % 4 != 0)
+            errors.push_back($sformatf("IPv4: options size=%0d not 4-byte aligned", options.size()));
+        // Total length
+        if (total_length < get_header_length())
+            errors.push_back($sformatf("IPv4: total_length=%0d < header_length=%0d",
+                             total_length, get_header_length()));
+        // TTL
+        if (ttl == 0)
+            warnings.push_back("IPv4: TTL=0 (packet will be dropped by routers)");
+        // Flags: reserved bit
+        if (flags[2] != 0)
+            warnings.push_back($sformatf("IPv4: flags reserved bit set (flags=%03b)", flags));
+        // DF + MF conflict
+        if (flags[1] && flags[0])
+            warnings.push_back("IPv4: both DF and MF flags set (unusual)");
+        // Fragment offset with DF
+        if (flags[1] && fragment_offset != 0)
+            errors.push_back($sformatf("IPv4: DF set but fragment_offset=%0d (should be 0)", fragment_offset));
+        // Header checksum
+        begin
+            byte unsigned hdr_data[$];
+            bit [15:0] saved_cksum = header_checksum;
+            bit [15:0] computed;
+            header_checksum = 0;
+            pack_header(hdr_data);
+            computed = packet_utils::ones_complement_checksum(hdr_data);
+            header_checksum = saved_cksum;
+            if (saved_cksum != computed)
+                errors.push_back($sformatf("IPv4: header_checksum=0x%04x, expected 0x%04x",
+                                 saved_cksum, computed));
+        end
+        // Source addr
+        if (src_addr == 32'hFFFFFFFF)
+            warnings.push_back("IPv4: src_addr is broadcast (255.255.255.255)");
+    endfunction
+
     static function void help();
         $display("============================================================================");
         $display(" IPv4 Options Construction Guide");

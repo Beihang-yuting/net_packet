@@ -97,6 +97,19 @@ class icmpv6_header extends protocol_base;
                          icmp_type, icmp_code, identifier, sequence_num);
     endfunction
 
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        // ICMPv6 type: error messages 0-127, informational 128-255
+        if (icmp_type >= 1 && icmp_type <= 4) begin
+            // Error types: valid
+        end else if (icmp_type == 128 || icmp_type == 129) begin
+            // Echo request/reply: valid
+        end else if (icmp_type == 133 || icmp_type == 134 || icmp_type == 135 || icmp_type == 136 || icmp_type == 137) begin
+            // NDP: valid
+        end else begin
+            warnings.push_back($sformatf("ICMPv6: type=%0d may be uncommon", icmp_type));
+        end
+    endfunction
+
 endclass
 
 `endif // ICMPV6_HEADER_SV

@@ -98,6 +98,13 @@ class udp_header extends protocol_base;
         return $sformatf("%0d -> %0d len:%0d", src_port, dst_port, length);
     endfunction
 
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        if (length < 8)
+            errors.push_back($sformatf("UDP: length=%0d < 8 (minimum UDP header size)", length));
+        if (src_port == 0)
+            warnings.push_back("UDP: src_port=0");
+    endfunction
+
 endclass
 
 `endif // UDP_HEADER_SV

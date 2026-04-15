@@ -153,6 +153,15 @@ class ipv6_header extends protocol_base;
                          next_header, hop_limit, payload_length);
     endfunction
 
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        if (version != 6)
+            errors.push_back($sformatf("IPv6: version=%0d, expected 6", version));
+        if (hop_limit == 0)
+            warnings.push_back("IPv6: hop_limit=0 (packet will be dropped by routers)");
+        if (payload_length == 0 && next_header != IPV6_NH_HBH)
+            warnings.push_back($sformatf("IPv6: payload_length=0 with next_header=%0d (jumbogram?)", next_header));
+    endfunction
+
 endclass
 
 `endif // IPV6_HEADER_SV

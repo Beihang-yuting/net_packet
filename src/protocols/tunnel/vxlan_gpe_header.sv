@@ -117,6 +117,16 @@ class vxlan_gpe_header extends protocol_base;
         return $sformatf("VXLAN-GPE vni:%0d np:%0d flags:0x%02x", vni, next_protocol, flags);
     endfunction
 
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        // I and P flags should be set
+        if (flags[3] != 1)
+            errors.push_back($sformatf("VXLAN-GPE: I-bit not set (flags=0x%02x)", flags));
+        if (next_protocol == 0 || next_protocol > 5)
+            warnings.push_back($sformatf("VXLAN-GPE: next_protocol=%0d out of known range (1-5)", next_protocol));
+        if (vni == 0)
+            warnings.push_back("VXLAN-GPE: VNI=0");
+    endfunction
+
 endclass
 
 `endif // VXLAN_GPE_HEADER_SV

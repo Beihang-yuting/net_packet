@@ -235,6 +235,21 @@ class geneve_header extends protocol_base;
     endfunction
 
     // help — print Geneve options usage guide
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        if (version != 0)
+            errors.push_back($sformatf("Geneve: version=%0d, expected 0", version));
+        if (reserved0 != 0)
+            warnings.push_back($sformatf("Geneve: reserved0=%0d, should be 0", reserved0));
+        if (reserved1 != 0)
+            warnings.push_back($sformatf("Geneve: reserved1=%0d, should be 0", reserved1));
+        // opt_len consistency: opt_len is in 4-byte units
+        if (opt_len * 4 != options.size())
+            errors.push_back($sformatf("Geneve: opt_len=%0d (=%0dB) but options size=%0dB",
+                             opt_len, opt_len * 4, options.size()));
+        if (vni == 0)
+            warnings.push_back("Geneve: VNI=0");
+    endfunction
+
     static function void help();
         $display("============================================================================");
         $display(" Geneve TLV Options Guide (RFC 8926)");

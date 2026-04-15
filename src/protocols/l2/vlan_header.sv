@@ -98,6 +98,13 @@ class vlan_header extends protocol_base;
         return $sformatf("VLAN %0d pcp:%0d dei:%0d type:0x%04x", vlan_id, pcp, dei, ethertype);
     endfunction
 
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        if (vlan_id == 0)
+            warnings.push_back("VLAN: vlan_id=0 (reserved)");
+        if (vlan_id > 4094)
+            errors.push_back($sformatf("VLAN: vlan_id=%0d > 4094", vlan_id));
+    endfunction
+
 endclass
 
 `endif // VLAN_HEADER_SV
