@@ -1,4 +1,8 @@
 // src/core/template_registry.sv
+// Auto-parses packet_template_e enum names into protocol chains.
+// To add a new template: just add ONE line to packet_template_e in packet_defines.sv.
+// The parser uses greedy longest-match to handle multi-word protocol names
+// (e.g., VXLAN_GPE, ERSPAN_III, NVME_TCP, MAC_CONTROL).
 `ifndef TEMPLATE_REGISTRY_SV
 `define TEMPLATE_REGISTRY_SV
 
@@ -9,7 +13,7 @@ class template_registry;
     protected protocol_type_e chains[packet_template_e][$];
 
     function new();
-        init_default_templates();
+        init_all_templates();
     endfunction
 
     function void register_template(packet_template_e tmpl, protocol_type_e chain[$]);
@@ -23,354 +27,217 @@ class template_registry;
         end
     endfunction
 
-    protected function void init_default_templates();
-        protocol_type_e c[$];
-
-        // =========================================================
-        // Basic: ETH + L3 + L4 (no tunnel)
-        // =========================================================
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV4_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_ICMP};
-        register_template(ETH_IPV4_ICMP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_SCTP};
-        register_template(ETH_IPV4_SCTP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP};
-        register_template(ETH_IPV6_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP};
-        register_template(ETH_IPV6_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_ICMPV6};
-        register_template(ETH_IPV6_ICMPV6, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_SCTP};
-        register_template(ETH_IPV6_SCTP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_ARP};
-        register_template(ETH_ARP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_IGMP};
-        register_template(ETH_IGMP, c);
-
-        // =========================================================
-        // MPLS: ETH + MPLS + L3 + L4
-        // =========================================================
-
-        c = '{PROTO_ETHERNET, PROTO_MPLS, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_MPLS_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_MPLS, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_MPLS_IPV4_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_MPLS, PROTO_IPV4, PROTO_ICMP};
-        register_template(ETH_MPLS_IPV4_ICMP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_MPLS, PROTO_IPV4, PROTO_SCTP};
-        register_template(ETH_MPLS_IPV4_SCTP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_MPLS, PROTO_IPV6, PROTO_TCP};
-        register_template(ETH_MPLS_IPV6_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_MPLS, PROTO_IPV6, PROTO_UDP};
-        register_template(ETH_MPLS_IPV6_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_MPLS, PROTO_IPV6, PROTO_ICMPV6};
-        register_template(ETH_MPLS_IPV6_ICMPV6, c);
-
-        c = '{PROTO_ETHERNET, PROTO_MPLS, PROTO_IPV6, PROTO_SCTP};
-        register_template(ETH_MPLS_IPV6_SCTP, c);
-
-        // =========================================================
-        // IPsec ESP: ETH + L3 + ESP
-        // =========================================================
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_ESP};
-        register_template(ETH_IPV4_ESP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_ESP};
-        register_template(ETH_IPV6_ESP, c);
-
-        // =========================================================
-        // VXLAN: ETH + outer_L3 + UDP + VXLAN + ETH + inner_L3 + inner_L4
-        // =========================================================
-
-        // Outer IPv4
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_VXLAN, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV4_UDP_VXLAN_ETH_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_VXLAN, PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV4_UDP_VXLAN_ETH_IPV4_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_VXLAN, PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP};
-        register_template(ETH_IPV4_UDP_VXLAN_ETH_IPV6_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_VXLAN, PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP};
-        register_template(ETH_IPV4_UDP_VXLAN_ETH_IPV6_UDP, c);
-
-        // Outer IPv6
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_VXLAN, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV6_UDP_VXLAN_ETH_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_VXLAN, PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV6_UDP_VXLAN_ETH_IPV4_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_VXLAN, PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP};
-        register_template(ETH_IPV6_UDP_VXLAN_ETH_IPV6_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_VXLAN, PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP};
-        register_template(ETH_IPV6_UDP_VXLAN_ETH_IPV6_UDP, c);
-
-        // =========================================================
-        // Geneve: ETH + outer_L3 + UDP + Geneve + ETH + inner_L3 + inner_L4
-        // =========================================================
-
-        // Outer IPv4
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_GENEVE, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV4_UDP_GENEVE_ETH_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_GENEVE, PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV4_UDP_GENEVE_ETH_IPV4_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_GENEVE, PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP};
-        register_template(ETH_IPV4_UDP_GENEVE_ETH_IPV6_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_GENEVE, PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP};
-        register_template(ETH_IPV4_UDP_GENEVE_ETH_IPV6_UDP, c);
-
-        // Outer IPv6
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_GENEVE, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV6_UDP_GENEVE_ETH_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_GENEVE, PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV6_UDP_GENEVE_ETH_IPV4_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_GENEVE, PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP};
-        register_template(ETH_IPV6_UDP_GENEVE_ETH_IPV6_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_GENEVE, PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP};
-        register_template(ETH_IPV6_UDP_GENEVE_ETH_IPV6_UDP, c);
-
-        // =========================================================
-        // GRE L3: ETH + outer_L3 + GRE + inner_L3 + inner_L4 (no inner ETH)
-        // =========================================================
-
-        // Outer IPv4
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_GRE, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV4_GRE_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_GRE, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV4_GRE_IPV4_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_GRE, PROTO_IPV6, PROTO_TCP};
-        register_template(ETH_IPV4_GRE_IPV6_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_GRE, PROTO_IPV6, PROTO_UDP};
-        register_template(ETH_IPV4_GRE_IPV6_UDP, c);
-
-        // Outer IPv6
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_GRE, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV6_GRE_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_GRE, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV6_GRE_IPV4_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_GRE, PROTO_IPV6, PROTO_TCP};
-        register_template(ETH_IPV6_GRE_IPV6_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_GRE, PROTO_IPV6, PROTO_UDP};
-        register_template(ETH_IPV6_GRE_IPV6_UDP, c);
-
-        // =========================================================
-        // NVGRE (GRE L2): ETH + outer_L3 + GRE + ETH + inner_L3 + inner_L4
-        // =========================================================
-
-        // Outer IPv4
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_GRE, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV4_GRE_ETH_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_GRE, PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV4_GRE_ETH_IPV4_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_GRE, PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP};
-        register_template(ETH_IPV4_GRE_ETH_IPV6_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_GRE, PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP};
-        register_template(ETH_IPV4_GRE_ETH_IPV6_UDP, c);
-
-        // Outer IPv6
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_GRE, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV6_GRE_ETH_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_GRE, PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV6_GRE_ETH_IPV4_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_GRE, PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP};
-        register_template(ETH_IPV6_GRE_ETH_IPV6_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_GRE, PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP};
-        register_template(ETH_IPV6_GRE_ETH_IPV6_UDP, c);
-
-        // =========================================================
-        // GTP-U: ETH + outer_L3 + UDP + GTP-U + inner_L3 + inner_L4
-        // =========================================================
-
-        // Outer IPv4
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_GTP_U, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV4_UDP_GTP_U_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_GTP_U, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV4_UDP_GTP_U_IPV4_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_GTP_U, PROTO_IPV6, PROTO_TCP};
-        register_template(ETH_IPV4_UDP_GTP_U_IPV6_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_GTP_U, PROTO_IPV6, PROTO_UDP};
-        register_template(ETH_IPV4_UDP_GTP_U_IPV6_UDP, c);
-
-        // Outer IPv6
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_GTP_U, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV6_UDP_GTP_U_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_GTP_U, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV6_UDP_GTP_U_IPV4_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_GTP_U, PROTO_IPV6, PROTO_TCP};
-        register_template(ETH_IPV6_UDP_GTP_U_IPV6_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_GTP_U, PROTO_IPV6, PROTO_UDP};
-        register_template(ETH_IPV6_UDP_GTP_U_IPV6_UDP, c);
-
-        // =========================================================
-        // ERSPAN: ETH + outer_L3 + GRE + ERSPAN + ETH + inner_L3 + inner_L4
-        // =========================================================
-
-        // ERSPAN Type II
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_GRE, PROTO_ERSPAN_II, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV4_GRE_ERSPAN_II_ETH_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_GRE, PROTO_ERSPAN_II, PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV4_GRE_ERSPAN_II_ETH_IPV4_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_GRE, PROTO_ERSPAN_II, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV6_GRE_ERSPAN_II_ETH_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_GRE, PROTO_ERSPAN_II, PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV6_GRE_ERSPAN_II_ETH_IPV4_UDP, c);
-
-        // ERSPAN Type III
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_GRE, PROTO_ERSPAN_III, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV4_GRE_ERSPAN_III_ETH_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_GRE, PROTO_ERSPAN_III, PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV4_GRE_ERSPAN_III_ETH_IPV4_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_GRE, PROTO_ERSPAN_III, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV6_GRE_ERSPAN_III_ETH_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_GRE, PROTO_ERSPAN_III, PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV6_GRE_ERSPAN_III_ETH_IPV4_UDP, c);
-
-        // =========================================================
-        // VXLAN-GPE: ETH + outer_L3 + UDP + VXLAN-GPE + [ETH] + inner_L3 + inner_L4
-        // =========================================================
-
-        // With inner ETH (L2 mode)
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_VXLAN_GPE, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV4_UDP_VXLAN_GPE_ETH_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_VXLAN_GPE, PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP};
-        register_template(ETH_IPV4_UDP_VXLAN_GPE_ETH_IPV4_UDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_VXLAN_GPE, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV6_UDP_VXLAN_GPE_ETH_IPV4_TCP, c);
-
-        // Without inner ETH (L3 mode)
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_VXLAN_GPE, PROTO_IPV4, PROTO_TCP};
-        register_template(ETH_IPV4_UDP_VXLAN_GPE_IPV4_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_VXLAN_GPE, PROTO_IPV6, PROTO_TCP};
-        register_template(ETH_IPV4_UDP_VXLAN_GPE_IPV6_TCP, c);
-
-        // =========================================================
-        // RDMA: ETH + L3 + UDP + RoCEv2 [+ NVMe-RDMA]
-        // =========================================================
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_ROCEV2};
-        register_template(ETH_IPV4_UDP_ROCEV2, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_ROCEV2};
-        register_template(ETH_IPV6_UDP_ROCEV2, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_ROCEV2, PROTO_NVME_RDMA};
-        register_template(ETH_IPV4_UDP_ROCEV2_NVME_RDMA, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_ROCEV2, PROTO_NVME_RDMA};
-        register_template(ETH_IPV6_UDP_ROCEV2_NVME_RDMA, c);
-
-        // =========================================================
-        // Storage over TCP: ETH + L3 + TCP + {NVMe-TCP, iSCSI, iWARP}
-        // =========================================================
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP, PROTO_NVME_TCP};
-        register_template(ETH_IPV4_TCP_NVME_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP, PROTO_NVME_TCP};
-        register_template(ETH_IPV6_TCP_NVME_TCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP, PROTO_ISCSI};
-        register_template(ETH_IPV4_TCP_ISCSI, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP, PROTO_ISCSI};
-        register_template(ETH_IPV6_TCP_ISCSI, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP, PROTO_IWARP};
-        register_template(ETH_IPV4_TCP_IWARP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_TCP, PROTO_IWARP};
-        register_template(ETH_IPV6_TCP_IWARP, c);
-
-        // =========================================================
-        // Mgmt/Control
-        // =========================================================
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_DHCP};
-        register_template(ETH_IPV4_UDP_DHCP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV6, PROTO_UDP, PROTO_DHCPV6};
-        register_template(ETH_IPV6_UDP_DHCPV6, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_DNS};
-        register_template(ETH_IPV4_UDP_DNS, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_BFD};
-        register_template(ETH_IPV4_UDP_BFD, c);
-
-        c = '{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_PTP};
-        register_template(ETH_IPV4_UDP_PTP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_PTP};
-        register_template(ETH_PTP_L2, c);
-
-        c = '{PROTO_ETHERNET, PROTO_LLDP};
-        register_template(ETH_LLDP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_LACP};
-        register_template(ETH_LACP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_STP};
-        register_template(ETH_STP, c);
-
-        c = '{PROTO_ETHERNET, PROTO_MAC_CONTROL};
-        register_template(ETH_MAC_CONTROL, c);
-
+    // =========================================================================
+    // Auto-register ALL templates by parsing enum names
+    // =========================================================================
+    protected function void init_all_templates();
+        packet_template_e tmpl = tmpl.first();
+        forever begin
+            protocol_type_e chain[$];
+            chain = parse_template_name(tmpl.name());
+            if (chain.size() > 0)
+                chains[tmpl] = chain;
+            if (tmpl == tmpl.last()) break;
+            tmpl = tmpl.next();
+        end
+    endfunction
+
+    // =========================================================================
+    // Parse template name string into protocol chain
+    // Uses greedy longest-match against known protocol tokens.
+    //
+    // Tokens are checked longest-first so that e.g. "VXLAN_GPE" matches before
+    // "VXLAN", "ERSPAN_III" before "ERSPAN_II" before "ERSPAN_I", "ICMPV6"
+    // before "ICMP", "NVME_TCP" before "TCP", "DHCPV6" before "DHCP", etc.
+    //
+    // After each matched token, pos advances past the token + 1 for the '_'
+    // separator. If the token is at the end of the string (no trailing '_'),
+    // pos overshoots past len and the while loop exits. This is correct.
+    // =========================================================================
+    protected function protocol_type_e parse_template_name(string name);
+        protocol_type_e chain[$];
+        int pos = 0;
+        int len = name.len();
+
+        while (pos < len) begin
+            bit matched = 0;
+
+            // ---- 11-char tokens ----
+            if (!matched && pos + 11 <= len && name.substr(pos, pos+10) == "MAC_CONTROL") begin
+                chain.push_back(PROTO_MAC_CONTROL); pos += 12; matched = 1;
+            end
+            // ---- 10-char tokens ----
+            if (!matched && pos + 10 <= len && name.substr(pos, pos+9) == "ERSPAN_III") begin
+                chain.push_back(PROTO_ERSPAN_III); pos += 11; matched = 1;
+            end
+
+            // ---- 9-char tokens ----
+            if (!matched && pos + 9 <= len && name.substr(pos, pos+8) == "ERSPAN_II") begin
+                chain.push_back(PROTO_ERSPAN_II); pos += 10; matched = 1;
+            end
+            if (!matched && pos + 9 <= len && name.substr(pos, pos+8) == "VXLAN_GPE") begin
+                chain.push_back(PROTO_VXLAN_GPE); pos += 10; matched = 1;
+            end
+            if (!matched && pos + 9 <= len && name.substr(pos, pos+8) == "NVME_RDMA") begin
+                chain.push_back(PROTO_NVME_RDMA); pos += 10; matched = 1;
+            end
+
+            // ---- 8-char tokens ----
+            if (!matched && pos + 8 <= len && name.substr(pos, pos+7) == "NVME_TCP") begin
+                chain.push_back(PROTO_NVME_TCP); pos += 9; matched = 1;
+            end
+            if (!matched && pos + 8 <= len && name.substr(pos, pos+7) == "IP_IN_IP") begin
+                chain.push_back(PROTO_IP_IN_IP); pos += 9; matched = 1;
+            end
+            if (!matched && pos + 8 <= len && name.substr(pos, pos+7) == "MPLS_GRE") begin
+                chain.push_back(PROTO_MPLS_GRE); pos += 9; matched = 1;
+            end
+            if (!matched && pos + 8 <= len && name.substr(pos, pos+7) == "MPLS_UDP") begin
+                chain.push_back(PROTO_MPLS_UDP); pos += 9; matched = 1;
+            end
+            if (!matched && pos + 8 <= len && name.substr(pos, pos+7) == "ERSPAN_I") begin
+                chain.push_back(PROTO_ERSPAN_I); pos += 9; matched = 1;
+            end
+
+            // ---- 6-char tokens ----
+            if (!matched && pos + 6 <= len && name.substr(pos, pos+5) == "ICMPV6") begin
+                chain.push_back(PROTO_ICMPV6); pos += 7; matched = 1;
+            end
+            if (!matched && pos + 6 <= len && name.substr(pos, pos+5) == "ROCEV2") begin
+                chain.push_back(PROTO_ROCEV2); pos += 7; matched = 1;
+            end
+            if (!matched && pos + 6 <= len && name.substr(pos, pos+5) == "DHCPV6") begin
+                chain.push_back(PROTO_DHCPV6); pos += 7; matched = 1;
+            end
+            if (!matched && pos + 6 <= len && name.substr(pos, pos+5) == "GENEVE") begin
+                chain.push_back(PROTO_GENEVE); pos += 7; matched = 1;
+            end
+            if (!matched && pos + 6 <= len && name.substr(pos, pos+5) == "MACSEC") begin
+                chain.push_back(PROTO_MACSEC); pos += 7; matched = 1;
+            end
+
+            // ---- 5-char tokens ----
+            if (!matched && pos + 5 <= len && name.substr(pos, pos+4) == "VXLAN") begin
+                chain.push_back(PROTO_VXLAN); pos += 6; matched = 1;
+            end
+            if (!matched && pos + 5 <= len && name.substr(pos, pos+4) == "GTP_U") begin
+                chain.push_back(PROTO_GTP_U); pos += 6; matched = 1;
+            end
+            if (!matched && pos + 5 <= len && name.substr(pos, pos+4) == "GTP_C") begin
+                chain.push_back(PROTO_GTP_C); pos += 6; matched = 1;
+            end
+            if (!matched && pos + 5 <= len && name.substr(pos, pos+4) == "ISCSI") begin
+                chain.push_back(PROTO_ISCSI); pos += 6; matched = 1;
+            end
+            if (!matched && pos + 5 <= len && name.substr(pos, pos+4) == "IWARP") begin
+                chain.push_back(PROTO_IWARP); pos += 6; matched = 1;
+            end
+            if (!matched && pos + 5 <= len && name.substr(pos, pos+4) == "NVGRE") begin
+                chain.push_back(PROTO_NVGRE); pos += 6; matched = 1;
+            end
+            // ---- 4-char tokens ----
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "IPV4") begin
+                chain.push_back(PROTO_IPV4); pos += 5; matched = 1;
+            end
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "IPV6") begin
+                chain.push_back(PROTO_IPV6); pos += 5; matched = 1;
+            end
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "ICMP") begin
+                chain.push_back(PROTO_ICMP); pos += 5; matched = 1;
+            end
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "SCTP") begin
+                chain.push_back(PROTO_SCTP); pos += 5; matched = 1;
+            end
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "MPLS") begin
+                chain.push_back(PROTO_MPLS); pos += 5; matched = 1;
+            end
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "VLAN") begin
+                chain.push_back(PROTO_VLAN); pos += 5; matched = 1;
+            end
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "QINQ") begin
+                chain.push_back(PROTO_QINQ); pos += 5; matched = 1;
+            end
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "IGMP") begin
+                chain.push_back(PROTO_IGMP); pos += 5; matched = 1;
+            end
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "LLDP") begin
+                chain.push_back(PROTO_LLDP); pos += 5; matched = 1;
+            end
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "LACP") begin
+                chain.push_back(PROTO_LACP); pos += 5; matched = 1;
+            end
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "DHCP") begin
+                chain.push_back(PROTO_DHCP); pos += 5; matched = 1;
+            end
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "OSPF") begin
+                chain.push_back(PROTO_OSPF); pos += 5; matched = 1;
+            end
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "ISIS") begin
+                chain.push_back(PROTO_ISIS); pos += 5; matched = 1;
+            end
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "L2TP") begin
+                chain.push_back(PROTO_L2TP); pos += 5; matched = 1;
+            end
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "HTTP") begin
+                chain.push_back(PROTO_HTTP); pos += 5; matched = 1;
+            end
+            if (!matched && pos + 4 <= len && name.substr(pos, pos+3) == "SNMP") begin
+                chain.push_back(PROTO_SNMP); pos += 5; matched = 1;
+            end
+
+            // ---- 3-char tokens ----
+            if (!matched && pos + 3 <= len && name.substr(pos, pos+2) == "ETH") begin
+                chain.push_back(PROTO_ETHERNET); pos += 4; matched = 1;
+            end
+            if (!matched && pos + 3 <= len && name.substr(pos, pos+2) == "TCP") begin
+                chain.push_back(PROTO_TCP); pos += 4; matched = 1;
+            end
+            if (!matched && pos + 3 <= len && name.substr(pos, pos+2) == "UDP") begin
+                chain.push_back(PROTO_UDP); pos += 4; matched = 1;
+            end
+            if (!matched && pos + 3 <= len && name.substr(pos, pos+2) == "GRE") begin
+                chain.push_back(PROTO_GRE); pos += 4; matched = 1;
+            end
+            if (!matched && pos + 3 <= len && name.substr(pos, pos+2) == "ARP") begin
+                chain.push_back(PROTO_ARP); pos += 4; matched = 1;
+            end
+            if (!matched && pos + 3 <= len && name.substr(pos, pos+2) == "ESP") begin
+                chain.push_back(PROTO_ESP); pos += 4; matched = 1;
+            end
+            if (!matched && pos + 3 <= len && name.substr(pos, pos+2) == "BFD") begin
+                chain.push_back(PROTO_BFD); pos += 4; matched = 1;
+            end
+            if (!matched && pos + 3 <= len && name.substr(pos, pos+2) == "DNS") begin
+                chain.push_back(PROTO_DNS); pos += 4; matched = 1;
+            end
+            if (!matched && pos + 3 <= len && name.substr(pos, pos+2) == "PTP") begin
+                chain.push_back(PROTO_PTP); pos += 4; matched = 1;
+            end
+            if (!matched && pos + 3 <= len && name.substr(pos, pos+2) == "STP") begin
+                chain.push_back(PROTO_STP); pos += 4; matched = 1;
+            end
+            if (!matched && pos + 3 <= len && name.substr(pos, pos+2) == "EAP") begin
+                chain.push_back(PROTO_EAP); pos += 4; matched = 1;
+            end
+            if (!matched && pos + 3 <= len && name.substr(pos, pos+2) == "BGP") begin
+                chain.push_back(PROTO_BGP); pos += 4; matched = 1;
+            end
+
+            // ---- 2-char variant markers (not protocols) ----
+            if (!matched && pos + 2 <= len && name.substr(pos, pos+1) == "L2") begin
+                // Variant marker like "L2" in "ETH_PTP_L2" — skip, not a protocol
+                pos += 3; matched = 1;
+            end
+
+            // If no match, skip this character (shouldn't happen with valid names)
+            if (!matched) begin
+                pos++;
+            end
+
+            if (pos >= len) break;
+        end
+
+        return chain;
     endfunction
 
 endclass
