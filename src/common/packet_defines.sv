@@ -79,7 +79,7 @@ typedef enum int {
     ETH_IPV6_ICMPV6                         = 6,
     ETH_IPV6_SCTP                           = 7,
     ETH_ARP                                 = 8,
-    ETH_IGMP                                = 9,
+    ETH_IPV4_IGMP                                = 9,
 
     // =========================================================
     // MPLS: ETH + MPLS + L3 + L4

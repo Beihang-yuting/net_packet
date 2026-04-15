@@ -114,7 +114,7 @@ class packet;
         if (pkt_rand_kind == PKT_CAT_BASIC) {
             pkt_kind inside {ETH_IPV4_TCP, ETH_IPV4_UDP, ETH_IPV4_ICMP, ETH_IPV4_SCTP,
                              ETH_IPV6_TCP, ETH_IPV6_UDP, ETH_IPV6_ICMPV6, ETH_IPV6_SCTP,
-                             ETH_ARP, ETH_IGMP};
+                             ETH_ARP, ETH_IPV4_IGMP};
         }
 
         // --- L4 categories ---
@@ -212,7 +212,7 @@ class packet;
             pkt_kind inside {
                 // Basic
                 ETH_IPV4_TCP, ETH_IPV4_UDP, ETH_IPV4_ICMP, ETH_IPV4_SCTP,
-                ETH_IGMP,
+                ETH_IPV4_IGMP,
                 // MPLS IPv4
                 ETH_MPLS_IPV4_TCP, ETH_MPLS_IPV4_UDP, ETH_MPLS_IPV4_ICMP, ETH_MPLS_IPV4_SCTP,
                 // ESP
