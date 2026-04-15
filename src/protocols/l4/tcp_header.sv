@@ -164,11 +164,15 @@ class tcp_header extends protocol_base;
     virtual function bit compare(protocol_base other);
         tcp_header o;
         if (!$cast(o, other)) return 0;
-        return (src_port == o.src_port) && (dst_port == o.dst_port) &&
+        if (!((src_port == o.src_port) && (dst_port == o.dst_port) &&
                (seq_num == o.seq_num) && (ack_num == o.ack_num) &&
                (data_offset == o.data_offset) && (reserved == o.reserved) &&
                (flags == o.flags) && (window_size == o.window_size) &&
-               (checksum == o.checksum) && (urgent_ptr == o.urgent_ptr);
+               (checksum == o.checksum) && (urgent_ptr == o.urgent_ptr))) return 0;
+        // Compare options
+        if (options.size() != o.options.size()) return 0;
+        foreach (options[i]) if (options[i] != o.options[i]) return 0;
+        return 1;
     endfunction
 
     virtual function string to_string();
@@ -197,6 +201,162 @@ class tcp_header extends protocol_base;
 
     virtual function string to_brief();
         return $sformatf("%0d -> %0d seq:0x%08x flags:0x%03x", src_port, dst_port, seq_num, flags);
+    endfunction
+
+    // =========================================================================
+    // TCP Option Construction Helpers
+    // Assign result to tcp.options, e.g.:
+    //   tcp.options = tcp_header::opt_mss(1460);
+    //   tcp.options = tcp_header::build_options('{...});
+    // =========================================================================
+
+    // Individual option builders — return byte arrays
+
+    // MSS (Kind=2, Len=4): Maximum Segment Size
+    static function byte unsigned opt_mss(bit [15:0] mss_val);
+        byte unsigned opt[$];
+        opt = '{8'd2, 8'd4, mss_val[15:8], mss_val[7:0]};
+        return opt;
+    endfunction
+
+    // Window Scale (Kind=3, Len=3): Window scaling factor
+    static function byte unsigned opt_window_scale(bit [7:0] shift_count);
+        byte unsigned opt[$];
+        opt = '{8'd3, 8'd3, shift_count};
+        return opt;
+    endfunction
+
+    // SACK Permitted (Kind=4, Len=2)
+    static function byte unsigned opt_sack_permitted();
+        byte unsigned opt[$];
+        opt = '{8'd4, 8'd2};
+        return opt;
+    endfunction
+
+    // Timestamps (Kind=8, Len=10): TSval + TSecr
+    static function byte unsigned opt_timestamps(bit [31:0] ts_val, bit [31:0] ts_ecr);
+        byte unsigned opt[$];
+        opt = '{8'd8, 8'd10,
+                ts_val[31:24], ts_val[23:16], ts_val[15:8], ts_val[7:0],
+                ts_ecr[31:24], ts_ecr[23:16], ts_ecr[15:8], ts_ecr[7:0]};
+        return opt;
+    endfunction
+
+    // NOP (Kind=1): single byte padding
+    static function byte unsigned opt_nop();
+        byte unsigned opt[$];
+        opt = '{8'd1};
+        return opt;
+    endfunction
+
+    // EOL (Kind=0): end of options list
+    static function byte unsigned opt_eol();
+        byte unsigned opt[$];
+        opt = '{8'd0};
+        return opt;
+    endfunction
+
+    // SACK (Kind=5, Len=variable): Selective ACK blocks
+    // Each block = {left_edge(32), right_edge(32)}
+    static function byte unsigned opt_sack(bit [31:0] blocks[$]);
+        byte unsigned opt[$];
+        int num_blocks = blocks.size() / 2;
+        opt.push_back(8'd5);
+        opt.push_back(2 + num_blocks * 8);  // len
+        foreach (blocks[i]) begin
+            opt.push_back(blocks[i][31:24]);
+            opt.push_back(blocks[i][23:16]);
+            opt.push_back(blocks[i][15:8]);
+            opt.push_back(blocks[i][7:0]);
+        end
+        return opt;
+    endfunction
+
+    // Build combined options with automatic NOP padding to 4-byte boundary
+    // Input: array of individual option byte arrays concatenated
+    // Pads with NOP/EOL to make total length multiple of 4
+    static function byte unsigned build_options(byte unsigned raw_opts[$]);
+        byte unsigned result[$];
+        int pad_needed;
+        result = raw_opts;
+        pad_needed = (4 - (result.size() % 4)) % 4;
+        for (int i = 0; i < pad_needed; i++)
+            result.push_back(8'd0);  // EOL padding
+        return result;
+    endfunction
+
+    // Convenience: build common SYN options (MSS + WScale + SACK-Permitted + Timestamps + NOP padding)
+    static function byte unsigned opt_syn_default(
+        bit [15:0] mss_val = 1460,
+        bit [7:0]  wscale = 7,
+        bit [31:0] ts_val = 0,
+        bit [31:0] ts_ecr = 0
+    );
+        byte unsigned opts[$];
+        byte unsigned tmp[$];
+        // MSS (4 bytes)
+        tmp = opt_mss(mss_val);
+        foreach (tmp[i]) opts.push_back(tmp[i]);
+        // SACK Permitted (2 bytes)
+        tmp = opt_sack_permitted();
+        foreach (tmp[i]) opts.push_back(tmp[i]);
+        // Timestamps (10 bytes) — need 2 NOP before for alignment
+        tmp = opt_nop();
+        foreach (tmp[i]) opts.push_back(tmp[i]);
+        tmp = opt_nop();
+        foreach (tmp[i]) opts.push_back(tmp[i]);
+        tmp = opt_timestamps(ts_val, ts_ecr);
+        foreach (tmp[i]) opts.push_back(tmp[i]);
+        // NOP + Window Scale (1+3 = 4 bytes)
+        tmp = opt_nop();
+        foreach (tmp[i]) opts.push_back(tmp[i]);
+        tmp = opt_window_scale(wscale);
+        foreach (tmp[i]) opts.push_back(tmp[i]);
+        // Total: 4+2+1+1+10+1+3 = 22 → pad to 24
+        return build_options(opts);
+    endfunction
+
+    // help — print TCP options usage guide
+    static function void help();
+        $display("============================================================================");
+        $display(" TCP Options Construction Guide");
+        $display("============================================================================");
+        $display("");
+        $display(" Available Options:");
+        $display("   opt_mss(1460)                          — MSS (Kind=2, 4B)");
+        $display("   opt_window_scale(7)                    — Window Scale (Kind=3, 3B)");
+        $display("   opt_sack_permitted()                   — SACK Permitted (Kind=4, 2B)");
+        $display("   opt_timestamps(ts_val, ts_ecr)         — Timestamps (Kind=8, 10B)");
+        $display("   opt_sack('{left, right, ...})          — SACK blocks (Kind=5, var)");
+        $display("   opt_nop()                              — NOP padding (Kind=1, 1B)");
+        $display("   opt_eol()                              — End of List (Kind=0, 1B)");
+        $display("   build_options(raw_bytes)               — Pad to 4-byte boundary");
+        $display("   opt_syn_default(mss, wscale, ts, tsr)  — Common SYN options combo");
+        $display("");
+        $display(" Usage with randomize:");
+        $display("   packet pkt = new();");
+        $display("   pkt.randomize() with {");
+        $display("       pkt_kind == ETH_IPV4_TCP;");
+        $display("       tcp.flags[1] == 1;  // SYN");
+        $display("   };");
+        $display("   // After randomize, set options (modifies packed header):");
+        $display("   pkt.tcp.options = tcp_header::opt_syn_default(1460, 7);");
+        $display("   pkt.do_pack();  // re-pack with options");
+        $display("");
+        $display(" Manual option building:");
+        $display("   byte unsigned opts[$];");
+        $display("   byte unsigned tmp[$];");
+        $display("   tmp = tcp_header::opt_mss(1460);");
+        $display("   foreach (tmp[i]) opts.push_back(tmp[i]);");
+        $display("   tmp = tcp_header::opt_timestamps(32'h12345678, 0);");
+        $display("   foreach (tmp[i]) opts.push_back(tmp[i]);");
+        $display("   pkt.tcp.options = tcp_header::build_options(opts);");
+        $display("   pkt.do_pack();");
+        $display("");
+        $display(" Common SYN options (20 bytes, padded to 24):");
+        $display("   MSS(1460) + SACK-Perm + NOP+NOP+Timestamps + NOP+WScale(7)");
+        $display("   pkt.tcp.options = tcp_header::opt_syn_default();");
+        $display("============================================================================");
     endfunction
 
 endclass

@@ -86,6 +86,13 @@ class ipv6_hbh_header extends protocol_base;
 
     virtual function void calc_fields(byte unsigned payload_data[$], protocol_type_e next_proto);
         if (!auto_calc) return;
+        // Auto-compute hdr_ext_len: total = (hdr_ext_len+1)*8, minus 2 bytes for next_header+hdr_ext_len = options
+        // So hdr_ext_len = (2 + options.size() + padding) / 8 - 1
+        begin
+            int total_opt_len = options.size();
+            int padded_len = ((2 + total_opt_len + 7) / 8) * 8;  // round up to 8-byte boundary
+            hdr_ext_len = (padded_len / 8) - 1;
+        end
         next_header = proto_to_ipv6_nh(next_proto);
     endfunction
 
@@ -202,6 +209,13 @@ class ipv6_routing_header extends protocol_base;
 
     virtual function void calc_fields(byte unsigned payload_data[$], protocol_type_e next_proto);
         if (!auto_calc) return;
+        // Auto-compute hdr_ext_len from data size
+        // header = next_header(1) + hdr_ext_len(1) + routing_type(1) + segments_left(1) + data
+        begin
+            int total_len = 4 + data.size();
+            int padded_len = ((total_len + 7) / 8) * 8;
+            hdr_ext_len = (padded_len / 8) - 1;
+        end
         next_header = proto_to_ipv6_nh(next_proto);
     endfunction
 
@@ -421,6 +435,12 @@ class ipv6_dest_header extends protocol_base;
 
     virtual function void calc_fields(byte unsigned payload_data[$], protocol_type_e next_proto);
         if (!auto_calc) return;
+        // Auto-compute hdr_ext_len: same as HBH
+        begin
+            int total_opt_len = options.size();
+            int padded_len = ((2 + total_opt_len + 7) / 8) * 8;  // round up to 8-byte boundary
+            hdr_ext_len = (padded_len / 8) - 1;
+        end
         next_header = proto_to_ipv6_nh(next_proto);
     endfunction
 

@@ -168,12 +168,15 @@ class ipv4_header extends protocol_base;
     virtual function bit compare(protocol_base other);
         ipv4_header o;
         if (!$cast(o, other)) return 0;
-        return (version == o.version) && (ihl == o.ihl) && (dscp == o.dscp) &&
+        if (!((version == o.version) && (ihl == o.ihl) && (dscp == o.dscp) &&
                (ecn == o.ecn) && (total_length == o.total_length) &&
                (identification == o.identification) && (flags == o.flags) &&
                (fragment_offset == o.fragment_offset) && (ttl == o.ttl) &&
                (protocol == o.protocol) && (header_checksum == o.header_checksum) &&
-               (src_addr == o.src_addr) && (dst_addr == o.dst_addr);
+               (src_addr == o.src_addr) && (dst_addr == o.dst_addr))) return 0;
+        if (options.size() != o.options.size()) return 0;
+        foreach (options[i]) if (options[i] != o.options[i]) return 0;
+        return 1;
     endfunction
 
     virtual function string to_string();
@@ -200,6 +203,119 @@ class ipv4_header extends protocol_base;
                          packet_utils::format_ipv4(src_addr),
                          packet_utils::format_ipv4(dst_addr),
                          protocol, ttl, total_length);
+    endfunction
+
+    // =========================================================================
+    // IPv4 Option Construction Helpers
+    // =========================================================================
+
+    // NOP (Type=1, 1 byte)
+    static function byte unsigned opt_nop();
+        byte unsigned opt[$];
+        opt = '{8'd1};
+        return opt;
+    endfunction
+
+    // EOL (Type=0, 1 byte)
+    static function byte unsigned opt_eol();
+        byte unsigned opt[$];
+        opt = '{8'd0};
+        return opt;
+    endfunction
+
+    // Record Route (Type=7): pointer starts at 4
+    static function byte unsigned opt_record_route(int num_slots = 9);
+        byte unsigned opt[$];
+        int len = 3 + num_slots * 4;
+        opt.push_back(8'd7);       // type
+        opt.push_back(len[7:0]);   // length
+        opt.push_back(8'd4);       // pointer (starts at 4)
+        for (int i = 0; i < num_slots * 4; i++)
+            opt.push_back(8'd0);
+        return opt;
+    endfunction
+
+    // Timestamp (Type=68)
+    static function byte unsigned opt_timestamp(int num_slots = 4, bit [3:0] oflw_flag = 0);
+        byte unsigned opt[$];
+        int len = 4 + num_slots * 4;
+        opt.push_back(8'd68);      // type
+        opt.push_back(len[7:0]);   // length
+        opt.push_back(8'd5);       // pointer
+        opt.push_back({oflw_flag, 4'd0});  // overflow + flag
+        for (int i = 0; i < num_slots * 4; i++)
+            opt.push_back(8'd0);
+        return opt;
+    endfunction
+
+    // Loose Source Route (Type=131)
+    static function byte unsigned opt_loose_source_route(bit [31:0] route_addrs[$]);
+        byte unsigned opt[$];
+        int len = 3 + route_addrs.size() * 4;
+        opt.push_back(8'd131);     // type
+        opt.push_back(len[7:0]);   // length
+        opt.push_back(8'd4);       // pointer
+        foreach (route_addrs[i]) begin
+            opt.push_back(route_addrs[i][31:24]);
+            opt.push_back(route_addrs[i][23:16]);
+            opt.push_back(route_addrs[i][15:8]);
+            opt.push_back(route_addrs[i][7:0]);
+        end
+        return opt;
+    endfunction
+
+    // Strict Source Route (Type=137)
+    static function byte unsigned opt_strict_source_route(bit [31:0] route_addrs[$]);
+        byte unsigned opt[$];
+        int len = 3 + route_addrs.size() * 4;
+        opt.push_back(8'd137);     // type
+        opt.push_back(len[7:0]);   // length
+        opt.push_back(8'd4);       // pointer
+        foreach (route_addrs[i]) begin
+            opt.push_back(route_addrs[i][31:24]);
+            opt.push_back(route_addrs[i][23:16]);
+            opt.push_back(route_addrs[i][15:8]);
+            opt.push_back(route_addrs[i][7:0]);
+        end
+        return opt;
+    endfunction
+
+    // Pad options to 4-byte boundary
+    static function byte unsigned build_options(byte unsigned raw_opts[$]);
+        byte unsigned result[$];
+        int pad_needed;
+        result = raw_opts;
+        pad_needed = (4 - (result.size() % 4)) % 4;
+        for (int i = 0; i < pad_needed; i++)
+            result.push_back(8'd0);
+        return result;
+    endfunction
+
+    // help — print IPv4 options usage guide
+    static function void help();
+        $display("============================================================================");
+        $display(" IPv4 Options Construction Guide");
+        $display("============================================================================");
+        $display("");
+        $display(" Available Options:");
+        $display("   opt_nop()                               — NOP (Type=1, 1B)");
+        $display("   opt_eol()                               — End (Type=0, 1B)");
+        $display("   opt_record_route(num_slots)             — Record Route (Type=7)");
+        $display("   opt_timestamp(num_slots, oflw_flag)     — Timestamp (Type=68)");
+        $display("   opt_loose_source_route(addrs[$])        — LSR (Type=131)");
+        $display("   opt_strict_source_route(addrs[$])       — SSR (Type=137)");
+        $display("   build_options(raw_bytes)                 — Pad to 4-byte boundary");
+        $display("");
+        $display(" Usage:");
+        $display("   packet pkt = new();");
+        $display("   pkt.randomize() with { pkt_kind == ETH_IPV4_TCP; };");
+        $display("   pkt.outer_ipv4.options = ipv4_header::opt_record_route(9);");
+        $display("   pkt.do_pack();  // ihl auto-updates to account for options");
+        $display("");
+        $display(" Source Route:");
+        $display("   bit [31:0] hops[$] = '{32'hC0A80001, 32'hC0A80002, 32'hC0A80003};");
+        $display("   pkt.outer_ipv4.options = ipv4_header::opt_loose_source_route(hops);");
+        $display("============================================================================");
     endfunction
 
 endclass
