@@ -6,6 +6,9 @@
 
 class packet_comparator;
 
+    // Control: whether to print PASS results (errors always print)
+    bit print_pass = 0;
+
     // Compare two packets, return list of field-level differences
     function void compare(packet a, packet b, ref diff_entry_t diffs[$]);
         diffs.delete();
@@ -217,16 +220,27 @@ class packet_comparator;
 
     // Convenience: compare and print in one call
     // Returns 1 if identical, 0 if different
+    // Errors always print. Pass results only print when print_pass=1.
     function bit compare_and_print(packet a, packet b);
         diff_entry_t diffs[$];
-        string s = "";
+        bit pass;
         compare(a, b, diffs);
-        s = {s, $sformatf("PKT_A (expect): %s\n", a.to_brief())};
-        s = {s, $sformatf("PKT_B (actual): %s\n", b.to_brief())};
-        s = {s, "\n"};
-        s = {s, diff_to_string(diffs)};
-        $display("%s", s);
-        return (diffs.size() == 0);
+        pass = (diffs.size() == 0);
+
+        if (!pass) begin
+            // FAIL: always print
+            string s = "";
+            s = {s, $sformatf("PKT_A (expect): %s\n", a.to_brief())};
+            s = {s, $sformatf("PKT_B (actual): %s\n", b.to_brief())};
+            s = {s, "\n"};
+            s = {s, diff_to_string(diffs)};
+            $display("%s", s);
+        end else if (print_pass) begin
+            // PASS: only print when enabled
+            $display("COMPARE RESULT: PASS — %s", a.to_brief());
+        end
+
+        return pass;
     endfunction
 
 endclass
