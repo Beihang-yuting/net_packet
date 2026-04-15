@@ -51,6 +51,71 @@ typedef enum bit [7:0] {
     RC_CNP                      = 8'h81
 } rocev2_opcode_e;
 
+// ============================================================================
+// IB Spec Chapter 9 — Opcode to Extended Header Mapping (Table 38)
+// ============================================================================
+//
+// Transport Types:
+//   RC (0x00-0x1F) : Reliable Connection — most common, supports all operations
+//   UC (0x20-0x3F) : Unreliable Connection — no ACK, Write/Send only
+//   UD (0x60-0x7F) : Unreliable Datagram — connectionless, requires DETH
+//   CNP (0x81)     : Congestion Notification Packet
+//
+// Extended Transport Headers:
+//   RETH (16B)         : VA(64) + R_Key(32) + DMA_Length(32) — for RDMA Write/Read
+//   AETH (4B)          : Syndrome(8) + MSN(24) — for ACK/ReadResponse
+//   AtomicETH (28B)    : VA(64) + R_Key(32) + SwapAdd(64) + Compare(64) — for CmpSwap/FetchAdd
+//   AtomicAckETH (8B)  : OrigRemoteData(64) — for Atomic ACK response
+//   ImmDt (4B)         : ImmediateData(32) — inline data notification
+//   IETH (4B)          : R_Key_to_Invalidate(32) — memory region invalidation
+//   DETH (8B)          : Q_Key(32) + SrcQP(24) + Rsvd(8) — for UD mode
+//   ICRC (4B)          : Invariant CRC — mandatory trailer on all RoCEv2 packets
+//
+// +---------------------------------+-----+------+------+-----------+--------------+------+-------+------+-------+
+// | Opcode                          | BTH | RETH | AETH | AtomicETH | AtomicAckETH | DETH | ImmDt | IETH | Bytes |
+// +---------------------------------+-----+------+------+-----------+--------------+------+-------+------+-------+
+// | RC_SEND_FIRST          (0x00)   |  v  |      |      |           |              |      |       |      |  16   |
+// | RC_SEND_MIDDLE         (0x01)   |  v  |      |      |           |              |      |       |      |  16   |
+// | RC_SEND_LAST           (0x02)   |  v  |      |      |           |              |      |       |      |  16   |
+// | RC_SEND_LAST_IMM       (0x03)   |  v  |      |      |           |              |      |   v   |      |  20   |
+// | RC_SEND_ONLY           (0x04)   |  v  |      |      |           |              |      |       |      |  16   |
+// | RC_SEND_ONLY_IMM       (0x05)   |  v  |      |      |           |              |      |   v   |      |  20   |
+// | RC_RDMA_WRITE_FIRST    (0x06)   |  v  |  v   |      |           |              |      |       |      |  32   |
+// | RC_RDMA_WRITE_MIDDLE   (0x07)   |  v  |      |      |           |              |      |       |      |  16   |
+// | RC_RDMA_WRITE_LAST     (0x08)   |  v  |      |      |           |              |      |       |      |  16   |
+// | RC_RDMA_WRITE_LAST_IMM (0x09)   |  v  |      |      |           |              |      |   v   |      |  20   |
+// | RC_RDMA_WRITE_ONLY     (0x0A)   |  v  |  v   |      |           |              |      |       |      |  32   |
+// | RC_RDMA_WRITE_ONLY_IMM (0x0B)   |  v  |  v   |      |           |              |      |   v   |      |  36   |
+// | RC_RDMA_READ_REQ       (0x0C)   |  v  |  v   |      |           |              |      |       |      |  32   |
+// | RC_RDMA_READ_RESP_FIRST(0x0D)   |  v  |      |  v   |           |              |      |       |      |  20   |
+// | RC_RDMA_READ_RESP_MID  (0x0E)   |  v  |      |      |           |              |      |       |      |  16   |
+// | RC_RDMA_READ_RESP_LAST (0x0F)   |  v  |      |  v   |           |              |      |       |      |  20   |
+// | RC_RDMA_READ_RESP_ONLY (0x10)   |  v  |      |  v   |           |              |      |       |      |  20   |
+// | RC_ACK                 (0x11)   |  v  |      |  v   |           |              |      |       |      |  20   |
+// | RC_ATOMIC_ACK          (0x12)   |  v  |      |  v   |           |      v       |      |       |      |  28   |
+// | RC_CMP_SWAP            (0x13)   |  v  |      |      |     v     |              |      |       |      |  44   |
+// | RC_FETCH_ADD           (0x14)   |  v  |      |      |     v     |              |      |       |      |  44   |
+// | RC_SEND_LAST_INV       (0x16)   |  v  |      |      |           |              |      |       |  v   |  20   |
+// | RC_SEND_ONLY_INV       (0x17)   |  v  |      |      |           |              |      |       |  v   |  20   |
+// | UC_SEND_FIRST          (0x20)   |  v  |      |      |           |              |      |       |      |  16   |
+// | UC_SEND_MIDDLE         (0x21)   |  v  |      |      |           |              |      |       |      |  16   |
+// | UC_SEND_LAST           (0x22)   |  v  |      |      |           |              |      |       |      |  16   |
+// | UC_SEND_LAST_IMM       (0x23)   |  v  |      |      |           |              |      |   v   |      |  20   |
+// | UC_SEND_ONLY           (0x24)   |  v  |      |      |           |              |      |       |      |  16   |
+// | UC_SEND_ONLY_IMM       (0x25)   |  v  |      |      |           |              |      |   v   |      |  20   |
+// | UC_RDMA_WRITE_FIRST    (0x26)   |  v  |  v   |      |           |              |      |       |      |  32   |
+// | UC_RDMA_WRITE_MIDDLE   (0x27)   |  v  |      |      |           |              |      |       |      |  16   |
+// | UC_RDMA_WRITE_LAST     (0x28)   |  v  |      |      |           |              |      |       |      |  16   |
+// | UC_RDMA_WRITE_LAST_IMM (0x29)   |  v  |      |      |           |              |      |   v   |      |  20   |
+// | UC_RDMA_WRITE_ONLY     (0x2A)   |  v  |  v   |      |           |              |      |       |      |  32   |
+// | UC_RDMA_WRITE_ONLY_IMM (0x2B)   |  v  |  v   |      |           |              |      |   v   |      |  36   |
+// | UD_SEND_ONLY           (0x64)   |  v  |      |      |           |              |  v   |       |      |  24   |
+// | UD_SEND_ONLY_IMM       (0x65)   |  v  |      |      |           |              |  v   |   v   |      |  28   |
+// | RC_CNP                 (0x81)   |  v  |      |      |           |              |      |       |      |  16   |
+// +---------------------------------+-----+------+------+-----------+--------------+------+-------+------+-------+
+// Bytes column = BTH(12) + extensions + ICRC(4), excludes payload
+//
+
 class rocev2_bth extends protocol_base;
 
     // === BTH fields (12 bytes) ===
@@ -467,6 +532,75 @@ class rocev2_bth extends protocol_base;
         if (has_immdt()) s = {s, $sformatf(" imm:0x%08x", imm_data)};
         if (has_ieth()) s = {s, $sformatf(" invRkey:0x%08x", ieth_r_key)};
         return s;
+    endfunction
+
+    // =========================================================================
+    // help — print opcode mapping and usage examples
+    // =========================================================================
+    static function void help();
+        $display("============================================================================");
+        $display(" RoCEv2 (IB Spec Ch9) — Opcode to Extended Header Mapping");
+        $display("============================================================================");
+        $display(" Opcode                        | RETH | AETH | Atomic | AtoAck | DETH | Imm | IETH");
+        $display(" -------------------------------|------|------|--------|--------|------|-----|-----");
+        $display(" RC_SEND_ONLY           (0x04) |      |      |        |        |      |     |     ");
+        $display(" RC_SEND_ONLY_IMM       (0x05) |      |      |        |        |      |  v  |     ");
+        $display(" RC_SEND_ONLY_INV       (0x17) |      |      |        |        |      |     |  v  ");
+        $display(" RC_RDMA_WRITE_ONLY     (0x0A) |  v   |      |        |        |      |     |     ");
+        $display(" RC_RDMA_WRITE_ONLY_IMM (0x0B) |  v   |      |        |        |      |  v  |     ");
+        $display(" RC_RDMA_WRITE_FIRST    (0x06) |  v   |      |        |        |      |     |     ");
+        $display(" RC_RDMA_WRITE_MIDDLE   (0x07) |      |      |        |        |      |     |     ");
+        $display(" RC_RDMA_WRITE_LAST     (0x08) |      |      |        |        |      |     |     ");
+        $display(" RC_RDMA_WRITE_LAST_IMM (0x09) |      |      |        |        |      |  v  |     ");
+        $display(" RC_RDMA_READ_REQ       (0x0C) |  v   |      |        |        |      |     |     ");
+        $display(" RC_RDMA_READ_RESP_ONLY (0x10) |      |  v   |        |        |      |     |     ");
+        $display(" RC_ACK                 (0x11) |      |  v   |        |        |      |     |     ");
+        $display(" RC_CMP_SWAP            (0x13) |      |      |   v    |        |      |     |     ");
+        $display(" RC_FETCH_ADD           (0x14) |      |      |   v    |        |      |     |     ");
+        $display(" RC_ATOMIC_ACK          (0x12) |      |  v   |        |   v    |      |     |     ");
+        $display(" UD_SEND_ONLY           (0x64) |      |      |        |        |  v   |     |     ");
+        $display(" UD_SEND_ONLY_IMM       (0x65) |      |      |        |        |  v   |  v  |     ");
+        $display(" RC_CNP                 (0x81) |      |      |        |        |      |     |     ");
+        $display("----------------------------------------------------------------------------");
+        $display("");
+        $display(" Usage Examples:");
+        $display("   // RDMA Write");
+        $display("   pkt.randomize() with {");
+        $display("       pkt_kind == ETH_IPV4_UDP_ROCEV2;");
+        $display("       rocev2.opcode       == RC_RDMA_WRITE_ONLY;");
+        $display("       rocev2.dest_qp      == 24'h000100;");
+        $display("       rocev2.reth_va      == 64'hDEAD_BEEF_0000_0000;");
+        $display("       rocev2.reth_r_key   == 32'h0000_1234;");
+        $display("       rocev2.reth_dma_len == 32'd4096;");
+        $display("   };");
+        $display("");
+        $display("   // RDMA Read Request");
+        $display("   pkt.randomize() with {");
+        $display("       pkt_kind == ETH_IPV4_UDP_ROCEV2;");
+        $display("       rocev2.opcode       == RC_RDMA_READ_REQ;");
+        $display("       rocev2.reth_va      == 64'h0000_0000_1000_0000;");
+        $display("       rocev2.reth_r_key   == 32'h0000_5678;");
+        $display("       rocev2.reth_dma_len == 32'd2048;");
+        $display("   };");
+        $display("");
+        $display("   // Atomic Compare & Swap");
+        $display("   pkt.randomize() with {");
+        $display("       pkt_kind == ETH_IPV4_UDP_ROCEV2;");
+        $display("       rocev2.opcode          == RC_CMP_SWAP;");
+        $display("       rocev2.atomic_va       == 64'h0000_0000_4000_0000;");
+        $display("       rocev2.atomic_r_key    == 32'h0000_AAAA;");
+        $display("       rocev2.atomic_swap_add == 64'h2;  // new value");
+        $display("       rocev2.atomic_compare  == 64'h1;  // expected old value");
+        $display("   };");
+        $display("");
+        $display("   // UD Send");
+        $display("   pkt.randomize() with {");
+        $display("       pkt_kind == ETH_IPV4_UDP_ROCEV2;");
+        $display("       rocev2.opcode      == UD_SEND_ONLY;");
+        $display("       rocev2.deth_q_key  == 32'h0000_1111;");
+        $display("       rocev2.deth_src_qp == 24'h000600;");
+        $display("   };");
+        $display("============================================================================");
     endfunction
 
 endclass

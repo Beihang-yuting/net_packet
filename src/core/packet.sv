@@ -514,6 +514,99 @@ class packet;
     endfunction
 
     // =========================================================================
+    // help — print usage guide for packet construction
+    // Call: packet::help();
+    // =========================================================================
+    static function void help();
+        $display("============================================================================");
+        $display(" Net Packet Generator — Usage Guide");
+        $display("============================================================================");
+        $display("");
+        $display(" 1. BASIC USAGE (single randomize call):");
+        $display("    packet pkt = new();");
+        $display("    pkt.randomize() with {");
+        $display("        pkt_kind == ETH_IPV4_TCP;");
+        $display("        outer_ipv4.src_addr == 32'hC0A80001;");
+        $display("        tcp.dst_port == 16'd80;");
+        $display("        pkt_len inside {[64:1518]};");
+        $display("    };");
+        $display("");
+        $display(" 2. TUNNEL PACKET:");
+        $display("    pkt.randomize() with {");
+        $display("        pkt_kind == ETH_IPV4_UDP_VXLAN_ETH_IPV4_TCP;");
+        $display("        outer_ipv4.src_addr == 32'hC0A80001;");
+        $display("        vxlan.vni == 24'd1000;");
+        $display("        inner_ipv4.src_addr == 32'h0A000001;");
+        $display("        tcp.dst_port == 16'd80;");
+        $display("    };");
+        $display("");
+        $display(" 3. VLAN CONTROL (no template needed):");
+        $display("    pkt.randomize() with {");
+        $display("        pkt_kind == ETH_IPV4_TCP;");
+        $display("        outer_vlan_num == 2;              // QinQ");
+        $display("        outer_vlan[0].vlan_id == 100;     // S-VLAN");
+        $display("        outer_vlan[1].vlan_id == 200;     // C-VLAN");
+        $display("    };");
+        $display("");
+        $display(" 4. CATEGORY RANDOM (test all TCP packets):");
+        $display("    pkt.randomize() with {");
+        $display("        pkt_rand_kind == PKT_CAT_TCP;     // random from all TCP templates");
+        $display("    };");
+        $display("");
+        $display(" 5. RDMA (RoCEv2):");
+        $display("    pkt.randomize() with {");
+        $display("        pkt_kind == ETH_IPV4_UDP_ROCEV2;");
+        $display("        rocev2.opcode       == RC_RDMA_WRITE_ONLY;");
+        $display("        rocev2.dest_qp      == 24'h000100;");
+        $display("        rocev2.reth_va      == 64'hDEAD_BEEF_0000_0000;");
+        $display("        rocev2.reth_r_key   == 32'h1234;");
+        $display("        rocev2.reth_dma_len == 32'd4096;");
+        $display("    };");
+        $display("    // Call rocev2_bth::help() for full opcode table");
+        $display("");
+        $display(" 6. ERROR/ABNORMAL PACKET:");
+        $display("    pkt.set_chain('{PROTO_ETHERNET, PROTO_TCP});  // skip IP");
+        $display("    pkt.randomize() with { tcp.dst_port == 80; };");
+        $display("    pkt.clear_chain();  // revert to normal");
+        $display("");
+        $display(" 7. ACCESS FIELDS:");
+        $display("    outer_eth / inner_eth         — Ethernet (outer/inner)");
+        $display("    outer_ipv4 / inner_ipv4       — IPv4 (outer/inner)");
+        $display("    outer_ipv6 / inner_ipv6       — IPv6 (outer/inner)");
+        $display("    outer_udp / inner_udp         — UDP (outer/inner)");
+        $display("    tcp, arp, icmp, sctp          — L4 (single instance)");
+        $display("    vxlan, gre, geneve, gtp_u     — Tunnel headers");
+        $display("    erspan_ii, erspan_iii, esp     — Tunnel/security");
+        $display("    rocev2, iwarp                  — RDMA");
+        $display("    nvme_tcp, iscsi                — Storage");
+        $display("    outer_vlan[0..3]               — Outer VLAN tags");
+        $display("    inner_vlan[0..3]               — Inner VLAN tags");
+        $display("    outer_vlan_num / inner_vlan_num — VLAN tag count (0-4)");
+        $display("    pkt_len                        — Total packet length");
+        $display("");
+        $display(" 8. CATEGORIES (pkt_rand_kind):");
+        $display("    PKT_CAT_ALL         — all templates");
+        $display("    PKT_CAT_BASIC       — non-tunnel basic");
+        $display("    PKT_CAT_TCP/UDP/ICMP/SCTP  — by L4 type");
+        $display("    PKT_CAT_OUTER_IPV4/IPV6    — by outer L3");
+        $display("    PKT_CAT_INNER_IPV4/IPV6    — by inner L3 (tunnel)");
+        $display("    PKT_CAT_TUNNEL      — all tunnels");
+        $display("    PKT_CAT_VXLAN/GRE/GENEVE/GTP/ERSPAN/NVGRE/VXLAN_GPE");
+        $display("    PKT_CAT_ROCEV2/STORAGE/MPLS/MGMT/ESP");
+        $display("");
+        $display(" 9. TEMPLATE LIST (pkt_kind):");
+        begin
+            packet_template_e t = t.first();
+            forever begin
+                $display("    %s = %0d", t.name(), t);
+                if (t == t.last()) break;
+                t = t.next();
+            end
+        end
+        $display("============================================================================");
+    endfunction
+
+    // =========================================================================
     // post_randomize — auto-build layer_stack from pkt_kind/custom_chain,
     //                  then auto do_pack() so raw_data is ready immediately
     // =========================================================================
