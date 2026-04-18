@@ -40,32 +40,32 @@ program test_phase2c_headers;
         // ---- MPLS: pack ----
         begin
             mpls_header m = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
 
             m.label = 20'd1000;
             m.tc    = 3'd5;
             m.s_bit = 1'b1;
             m.ttl   = 8'd128;
-            m.pack_header(packed);
-            check("mpls_pack: size", packed.size() == 4);
+            m.pack_header(pkd);
+            check("mpls_pack: size", pkd.size() == 4);
         end
 
         // ---- MPLS: unpack round-trip ----
         begin
             mpls_header m = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             m.label = 20'd1000;
             m.tc    = 3'd5;
             m.s_bit = 1'b1;
             m.ttl   = 8'd128;
-            m.pack_header(packed);
+            m.pack_header(pkd);
 
             begin
                 mpls_header m2 = new();
                 offset = 0;
-                m2.unpack_header(packed, offset);
+                m2.unpack_header(pkd, offset);
                 check("mpls_unpack: label",  m2.label == 20'd1000);
                 check("mpls_unpack: tc",     m2.tc    == 3'd5);
                 check("mpls_unpack: s_bit",  m2.s_bit == 1'b1);
@@ -83,7 +83,8 @@ program test_phase2c_headers;
             m.ttl   = 8'd128;
 
             begin
-                protocol_base m2 = m.clone();
+                protocol_base m2;
+                m2 = m.clone();
                 check("mpls_clone: compare", m.compare(m2));
             end
         end
@@ -110,7 +111,8 @@ program test_phase2c_headers;
 
         // ---- MPLS: static create ----
         begin
-            mpls_header m = mpls_header::create(20'd500, 8'd32);
+            mpls_header m;
+            m = mpls_header::create(20'd500, 8'd32);
             check("mpls_create: label", m.label == 20'd500);
             check("mpls_create: ttl",   m.ttl   == 8'd32);
         end
@@ -128,26 +130,26 @@ program test_phase2c_headers;
         // ---- ipv6_hbh_header: pack ----
         begin
             ipv6_hbh_header h = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
 
-            h.pack_header(packed);
-            check("hbh_pack: size", packed.size() == 8);
+            h.pack_header(pkd);
+            check("hbh_pack: size", pkd.size() == 8);
         end
 
         // ---- ipv6_hbh_header: unpack round-trip ----
         begin
             ipv6_hbh_header h = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             h.next_header = 8'd6; // TCP
             h.hdr_ext_len = 8'd0;
-            h.pack_header(packed);
+            h.pack_header(pkd);
 
             begin
                 ipv6_hbh_header h2 = new();
                 offset = 0;
-                h2.unpack_header(packed, offset);
+                h2.unpack_header(pkd, offset);
                 check("hbh_unpack: next_header", h2.next_header == 8'd6);
                 check("hbh_unpack: hdr_ext_len", h2.hdr_ext_len == 8'd0);
                 check("hbh_unpack: offset",      offset == 8);
@@ -180,20 +182,20 @@ program test_phase2c_headers;
         // ---- ipv6_routing_header: pack/unpack round-trip ----
         begin
             ipv6_routing_header h = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             h.next_header   = 8'd6;
             h.hdr_ext_len   = 8'd0;
             h.routing_type  = 8'd2;
             h.segments_left = 8'd3;
-            h.pack_header(packed);
-            check("routing_pack: size", packed.size() == 8);
+            h.pack_header(pkd);
+            check("routing_pack: size", pkd.size() == 8);
 
             begin
                 ipv6_routing_header h2 = new();
                 offset = 0;
-                h2.unpack_header(packed, offset);
+                h2.unpack_header(pkd, offset);
                 check("routing_unpack: next_header",   h2.next_header   == 8'd6);
                 check("routing_unpack: routing_type",  h2.routing_type  == 8'd2);
                 check("routing_unpack: segments_left", h2.segments_left == 8'd3);
@@ -222,20 +224,20 @@ program test_phase2c_headers;
         // ---- ipv6_fragment_header: pack/unpack round-trip with fields ----
         begin
             ipv6_fragment_header h = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             h.next_header     = 8'd6;
             h.fragment_offset = 13'd100;
             h.m_flag          = 1'b1;
             h.identification  = 32'h12345678;
-            h.pack_header(packed);
-            check("fragment_pack: size", packed.size() == 8);
+            h.pack_header(pkd);
+            check("fragment_pack: size", pkd.size() == 8);
 
             begin
                 ipv6_fragment_header h2 = new();
                 offset = 0;
-                h2.unpack_header(packed, offset);
+                h2.unpack_header(pkd, offset);
                 check("fragment_unpack: next_header",     h2.next_header     == 8'd6);
                 check("fragment_unpack: fragment_offset", h2.fragment_offset == 13'd100);
                 check("fragment_unpack: m_flag",          h2.m_flag          == 1'b1);
@@ -265,18 +267,18 @@ program test_phase2c_headers;
         // ---- ipv6_dest_header: pack/unpack round-trip ----
         begin
             ipv6_dest_header h = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             h.next_header = 8'd17; // UDP
             h.hdr_ext_len = 8'd0;
-            h.pack_header(packed);
-            check("dest_pack: size", packed.size() == 8);
+            h.pack_header(pkd);
+            check("dest_pack: size", pkd.size() == 8);
 
             begin
                 ipv6_dest_header h2 = new();
                 offset = 0;
-                h2.unpack_header(packed, offset);
+                h2.unpack_header(pkd, offset);
                 check("dest_unpack: next_header", h2.next_header == 8'd17);
                 check("dest_unpack: hdr_ext_len", h2.hdr_ext_len == 8'd0);
                 check("dest_unpack: offset",      offset == 8);
@@ -298,7 +300,8 @@ program test_phase2c_headers;
             h.next_header = 8'd6;
 
             begin
-                protocol_base h2 = h.clone();
+                protocol_base h2;
+                h2 = h.clone();
                 check("hbh_clone: compare", h.compare(h2));
             end
         end
@@ -311,7 +314,8 @@ program test_phase2c_headers;
             h.segments_left = 8'd1;
 
             begin
-                protocol_base h2 = h.clone();
+                protocol_base h2;
+                h2 = h.clone();
                 check("routing_clone: compare", h.compare(h2));
             end
         end
@@ -324,7 +328,8 @@ program test_phase2c_headers;
             h.identification  = 32'hDEADBEEF;
 
             begin
-                protocol_base h2 = h.clone();
+                protocol_base h2;
+                h2 = h.clone();
                 check("fragment_clone: compare", h.compare(h2));
             end
         end
@@ -335,7 +340,8 @@ program test_phase2c_headers;
             h.next_header = 8'd58;
 
             begin
-                protocol_base h2 = h.clone();
+                protocol_base h2;
+                h2 = h.clone();
                 check("dest_clone: compare", h.compare(h2));
             end
         end
@@ -351,31 +357,31 @@ program test_phase2c_headers;
         // ---- SCTP: pack ----
         begin
             sctp_header s = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
 
             s.src_port         = 16'd1234;
             s.dst_port         = 16'd5678;
             s.verification_tag = 32'hAABBCCDD;
-            s.pack_header(packed);
-            check("sctp_pack: size", packed.size() == 12);
+            s.pack_header(pkd);
+            check("sctp_pack: size", pkd.size() == 12);
         end
 
         // ---- SCTP: unpack round-trip ----
         begin
             sctp_header s = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             s.src_port         = 16'd1234;
             s.dst_port         = 16'd5678;
             s.verification_tag = 32'hAABBCCDD;
             s.checksum         = 32'h11223344;
-            s.pack_header(packed);
+            s.pack_header(pkd);
 
             begin
                 sctp_header s2 = new();
                 offset = 0;
-                s2.unpack_header(packed, offset);
+                s2.unpack_header(pkd, offset);
                 check("sctp_unpack: src_port",         s2.src_port         == 16'd1234);
                 check("sctp_unpack: dst_port",         s2.dst_port         == 16'd5678);
                 check("sctp_unpack: verification_tag", s2.verification_tag == 32'hAABBCCDD);
@@ -392,7 +398,8 @@ program test_phase2c_headers;
             s.verification_tag = 32'hAABBCCDD;
 
             begin
-                protocol_base s2 = s.clone();
+                protocol_base s2;
+                s2 = s.clone();
                 check("sctp_clone: compare", s.compare(s2));
             end
         end
@@ -410,21 +417,21 @@ program test_phase2c_headers;
         // ---- PTP: pack ----
         begin
             ptp_header p = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
 
             p.message_type   = 4'd0;
             p.domain_number  = 8'd0;
             p.sequence_id    = 16'd100;
             p.clock_identity = 64'h0011223344556677;
             p.port_number    = 16'd1;
-            p.pack_header(packed);
-            check("ptp_pack: size", packed.size() == 34);
+            p.pack_header(pkd);
+            check("ptp_pack: size", pkd.size() == 34);
         end
 
         // ---- PTP: unpack round-trip ----
         begin
             ptp_header p = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             p.message_type   = 4'd0;
@@ -432,12 +439,12 @@ program test_phase2c_headers;
             p.sequence_id    = 16'd100;
             p.clock_identity = 64'h0011223344556677;
             p.port_number    = 16'd1;
-            p.pack_header(packed);
+            p.pack_header(pkd);
 
             begin
                 ptp_header p2 = new();
                 offset = 0;
-                p2.unpack_header(packed, offset);
+                p2.unpack_header(pkd, offset);
                 check("ptp_unpack: message_type",   p2.message_type   == 4'd0);
                 check("ptp_unpack: sequence_id",    p2.sequence_id    == 16'd100);
                 check("ptp_unpack: clock_identity", p2.clock_identity == 64'h0011223344556677);
@@ -456,14 +463,16 @@ program test_phase2c_headers;
             p.port_number    = 16'd3;
 
             begin
-                protocol_base p2 = p.clone();
+                protocol_base p2;
+                p2 = p.clone();
                 check("ptp_clone: compare", p.compare(p2));
             end
         end
 
         // ---- PTP: static create ----
         begin
-            ptp_header p = ptp_header::create(.msg_type(4'd1));
+            ptp_header p;
+            p = ptp_header::create(.msg_type(4'd1));
             check("ptp_create: message_type", p.message_type == 4'd1);
         end
 
@@ -481,29 +490,29 @@ program test_phase2c_headers;
         // ---- VXLAN-GPE: pack ----
         begin
             vxlan_gpe_header v = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
 
             v.vni           = 24'hABCDEF;
             v.next_protocol = 8'd3;
-            v.pack_header(packed);
-            check("vxlan_gpe_pack: size", packed.size() == 8);
+            v.pack_header(pkd);
+            check("vxlan_gpe_pack: size", pkd.size() == 8);
         end
 
         // ---- VXLAN-GPE: unpack round-trip ----
         begin
             vxlan_gpe_header v = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             v.flags         = 8'h0C;
             v.next_protocol = 8'd1;   // IPv4
             v.vni           = 24'hABCDEF;
-            v.pack_header(packed);
+            v.pack_header(pkd);
 
             begin
                 vxlan_gpe_header v2 = new();
                 offset = 0;
-                v2.unpack_header(packed, offset);
+                v2.unpack_header(pkd, offset);
                 check("vxlan_gpe_unpack: flags",         v2.flags         == 8'h0C);
                 check("vxlan_gpe_unpack: next_protocol", v2.next_protocol == 8'd1);
                 check("vxlan_gpe_unpack: vni",           v2.vni           == 24'hABCDEF);
@@ -531,7 +540,8 @@ program test_phase2c_headers;
             v.vni           = 24'd999;
 
             begin
-                protocol_base v2 = v.clone();
+                protocol_base v2;
+                v2 = v.clone();
                 check("vxlan_gpe_clone: compare", v.compare(v2));
             end
         end
@@ -547,28 +557,28 @@ program test_phase2c_headers;
         // ---- ESP: pack ----
         begin
             esp_header e = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
 
             e.spi             = 32'h12345678;
             e.sequence_number = 32'd1;
-            e.pack_header(packed);
-            check("esp_pack: size", packed.size() == 8);
+            e.pack_header(pkd);
+            check("esp_pack: size", pkd.size() == 8);
         end
 
         // ---- ESP: unpack round-trip ----
         begin
             esp_header e = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             e.spi             = 32'h12345678;
             e.sequence_number = 32'd1;
-            e.pack_header(packed);
+            e.pack_header(pkd);
 
             begin
                 esp_header e2 = new();
                 offset = 0;
-                e2.unpack_header(packed, offset);
+                e2.unpack_header(pkd, offset);
                 check("esp_unpack: spi",             e2.spi             == 32'h12345678);
                 check("esp_unpack: sequence_number", e2.sequence_number == 32'd1);
                 check("esp_unpack: offset",          offset             == 8);
@@ -582,7 +592,8 @@ program test_phase2c_headers;
             e.sequence_number = 32'd42;
 
             begin
-                protocol_base e2 = e.clone();
+                protocol_base e2;
+                e2 = e.clone();
                 check("esp_clone: compare", e.compare(e2));
             end
         end

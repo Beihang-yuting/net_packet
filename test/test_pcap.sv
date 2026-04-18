@@ -87,7 +87,7 @@ program test_pcap;
                 begin
                     udp_header u;
                     $cast(u, p.get_layer(PROTO_UDP));
-                    u.dst_port = 16'd(5000 + i);
+                    u.dst_port = 5000 + i;
                 end
                 p.pkt_len = 64 + i * 10;
                 p.do_pack();

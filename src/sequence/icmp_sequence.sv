@@ -24,7 +24,7 @@ class icmp_ping_seq extends protocol_sequence;
         ping_length     = 64;
     endfunction
 
-    virtual function void generate();
+    virtual function void gen_packets();
         packets.delete();
 
         // Echo Request (type=8, code=0)

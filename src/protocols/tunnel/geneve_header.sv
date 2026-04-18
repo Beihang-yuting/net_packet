@@ -14,7 +14,7 @@ class geneve_header extends protocol_base;
     rand bit [15:0] protocol_type;
     rand bit [23:0] vni;
     rand bit [7:0]  reserved1;
-    byte unsigned   options[];
+    byte unsigned   options[$];
 
     // ----- Geneve Option rand controls -----
     rand bit        opt_en;          // Enable auto-generating options
@@ -57,7 +57,7 @@ class geneve_header extends protocol_base;
         protocol_type = 16'h6558;
         vni           = 24'd100;
         reserved1     = 8'h0;
-        options       = new[0];
+        options = '{};
         opt_en = 0; opt_num = 0;
         opt_class0 = 16'h0100; opt_type0 = 0; opt_data0 = 0;
         opt_class1 = 16'h0100; opt_type1 = 0; opt_data1 = 0;
@@ -97,9 +97,9 @@ class geneve_header extends protocol_base;
         vni[7:0]      = data[offset]; offset++;
         reserved1     = data[offset]; offset++;
         opt_bytes = int'(opt_len) * 4;
-        options = new[opt_bytes];
+        options.delete();
         for (i = 0; i < opt_bytes; i++) begin
-            options[i] = data[offset]; offset++;
+            options.push_back(data[offset]); offset++;
         end
     endfunction
 
@@ -150,7 +150,7 @@ class geneve_header extends protocol_base;
         h.protocol_type = protocol_type;
         h.vni           = vni;
         h.reserved1     = reserved1;
-        h.options       = new[options.size()](options);
+        h.options = options;
         h.opt_en        = opt_en;
         h.opt_num       = opt_num;
         h.opt_class0    = opt_class0;
@@ -206,7 +206,7 @@ class geneve_header extends protocol_base;
     // opt_class: 16-bit option class (0x0100=Linux, 0x0000=unassigned)
     // opt_type:  7-bit type code (bit 7 = critical flag)
     // opt_data:  option data (must be multiple of 4 bytes)
-    static function byte unsigned build_tlv(
+    static function byte_queue build_tlv(
         bit [15:0] opt_class,
         bit [7:0]  opt_type,
         byte unsigned opt_data[$]
@@ -225,7 +225,7 @@ class geneve_header extends protocol_base;
 
     // Build multiple TLV options and concatenate
     // After building, assign to geneve.options and geneve.opt_len will auto-compute in calc_fields
-    static function byte unsigned build_options(byte unsigned tlv_list[$]);
+    static function byte_queue build_options(byte unsigned tlv_list[$]);
         // TLV list is already concatenated; just ensure 4-byte alignment
         byte unsigned result[$];
         result = tlv_list;

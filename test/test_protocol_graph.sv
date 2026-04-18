@@ -8,6 +8,11 @@ program test_protocol_graph;
     int pass_count = 0;
     int fail_count = 0;
 
+    function automatic bit has_proto(protocol_type_e q[$], protocol_type_e p);
+        foreach (q[i]) if (q[i] == p) return 1;
+        return 0;
+    endfunction
+
     task automatic check(string name, bit condition);
         if (condition) begin $display("[PASS] %s", name); pass_count++; end
         else begin $display("[FAIL] %s", name); fail_count++; end
@@ -31,9 +36,9 @@ program test_protocol_graph;
         check("graph: vxlan->tcp invalid", !g.is_valid_next(PROTO_VXLAN, PROTO_TCP));
 
         g.get_valid_next(PROTO_IPV4, result);
-        check("graph: ipv4 has TCP", result.find_first_index(x) with (x == PROTO_TCP) != '{});
-        check("graph: ipv4 has UDP", result.find_first_index(x) with (x == PROTO_UDP) != '{});
-        check("graph: ipv4 has GRE", result.find_first_index(x) with (x == PROTO_GRE) != '{});
+        check("graph: ipv4 has TCP", has_proto(result, PROTO_TCP));
+        check("graph: ipv4 has UDP", has_proto(result, PROTO_UDP));
+        check("graph: ipv4 has GRE", has_proto(result, PROTO_GRE));
 
         check("graph: validate ETH/IP/TCP", g.validate_chain('{PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP}));
         check("graph: validate VXLAN chain", g.validate_chain('{PROTO_ETHERNET, PROTO_IPV4, PROTO_UDP, PROTO_VXLAN, PROTO_ETHERNET, PROTO_IPV4, PROTO_TCP}));

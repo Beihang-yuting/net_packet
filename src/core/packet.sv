@@ -1424,12 +1424,16 @@ class packet;
     // compute_transport_checksums — post-pack pseudo-header checksums
     // =========================================================================
     protected function void compute_transport_checksums();
-        for (int i = 0; i < layer_stack.size(); i++) begin
-            protocol_type_e ptype = layer_stack[i].proto_type;
+        // Process innermost transport layers first (reverse order) so that
+        // outer checksums include correct inner checksums in tunnel scenarios
+        for (int i = int'(layer_stack.size()) - 1; i >= 0; i--) begin
+            protocol_type_e ptype;
+            int ip_idx;
+            ptype = layer_stack[i].proto_type;
             if (ptype != PROTO_TCP && ptype != PROTO_UDP && ptype != PROTO_ICMPV6) continue;
 
             // Find parent IP layer (search backwards from current layer)
-            int ip_idx = -1;
+            ip_idx = -1;
             for (int j = i - 1; j >= 0; j--) begin
                 if (layer_stack[j].proto_type == PROTO_IPV4 ||
                     layer_stack[j].proto_type == PROTO_IPV6) begin
@@ -1447,18 +1451,44 @@ class packet;
                 bit [127:0] src_v6, dst_v6;
                 int transport_len;
 
-                // Collect transport header + everything after it until next IP layer or end
-                // Simply: pack current layer + remaining payload from raw_data
-                layer_stack[i].pack_header(transport_data);
+                // Collect transport header (with checksum zeroed) + payload
+                // Zero the checksum field before packing for computation
+                if (ptype == PROTO_TCP) begin
+                    tcp_header tcp;
+                    if ($cast(tcp, layer_stack[i])) begin
+                        bit [15:0] saved = tcp.checksum;
+                        tcp.checksum = 0;
+                        tcp.pack_header(transport_data);
+                        tcp.checksum = saved;
+                    end
+                end else if (ptype == PROTO_UDP) begin
+                    udp_header udp;
+                    if ($cast(udp, layer_stack[i])) begin
+                        bit [15:0] saved = udp.checksum;
+                        udp.checksum = 0;
+                        udp.pack_header(transport_data);
+                        udp.checksum = saved;
+                    end
+                end else begin
+                    icmpv6_header icmpv6;
+                    if ($cast(icmpv6, layer_stack[i])) begin
+                        bit [15:0] saved = icmpv6.checksum;
+                        icmpv6.checksum = 0;
+                        icmpv6.pack_header(transport_data);
+                        icmpv6.checksum = saved;
+                    end
+                end
 
                 // Calculate transport payload: bytes from raw_data after this layer's header
                 begin
-                    int hdr_offset = 0;
+                    int hdr_offset;
+                    int end_offset;
+                    hdr_offset = 0;
                     for (int k = 0; k <= i; k++)
                         hdr_offset += layer_stack[k].get_header_length();
 
                     // Find end: either next Ethernet/IP layer or end of raw_data
-                    int end_offset = raw_data.size();
+                    end_offset = raw_data.size();
                     for (int k = i + 1; k < layer_stack.size(); k++) begin
                         // If we hit another IP layer that's not directly inside this transport
                         // (e.g., in tunnel scenario), stop
@@ -1484,7 +1514,10 @@ class packet;
                     packet_utils::pack_bytes_32(pseudo_hdr, ip4.dst_addr);
                     pseudo_hdr.push_back(8'h00);
                     pseudo_hdr.push_back(ip4.protocol);
-                    packet_utils::pack_bytes_16(pseudo_hdr, transport_len[15:0]);
+                    begin
+                        bit [15:0] _tl16 = transport_len[15:0];
+                        packet_utils::pack_bytes_16(pseudo_hdr, _tl16);
+                    end
                 end else begin
                     ipv6_header ip6;
                     if (!$cast(ip6, layer_stack[ip_idx])) continue;
@@ -1493,7 +1526,10 @@ class packet;
                         pseudo_hdr.push_back(ip6.src_addr[b*8 +: 8]);
                     for (int b = 15; b >= 0; b--)
                         pseudo_hdr.push_back(ip6.dst_addr[b*8 +: 8]);
-                    packet_utils::pack_bytes_32(pseudo_hdr, transport_len);
+                    begin
+                        bit [31:0] _tl32 = transport_len;
+                        packet_utils::pack_bytes_32(pseudo_hdr, _tl32);
+                    end
                     pseudo_hdr.push_back(8'h00);
                     pseudo_hdr.push_back(8'h00);
                     pseudo_hdr.push_back(8'h00);
@@ -1777,6 +1813,7 @@ class packet;
         case (port)
             16'd4420: return PROTO_NVME_TCP;
             16'd3260: return PROTO_ISCSI;
+            16'd5044: return PROTO_IWARP;
             default:  return PROTO_RAW_PAYLOAD;
         endcase
     endfunction

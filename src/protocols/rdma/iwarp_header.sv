@@ -17,7 +17,7 @@ class iwarp_header extends protocol_base;
     rand bit [15:0] mpa_crc;
 
     // === DDP fields (14 bytes) ===
-    rand bit        tagged;
+    rand bit        tagged_bit;
     rand bit        last;
     rand bit [5:0]  ddp_reserved;
     rand bit [7:0]  ddp_version;
@@ -46,7 +46,7 @@ class iwarp_header extends protocol_base;
         mpa_length     = 16'd0;
         mpa_reserved   = 16'h0;
         mpa_crc        = 16'h0;
-        tagged         = 1'b0;
+        tagged_bit         = 1'b0;
         last           = 1'b0;
         ddp_reserved   = 6'h0;
         ddp_version    = 8'd1;
@@ -73,12 +73,18 @@ class iwarp_header extends protocol_base;
         packet_utils::pack_bytes_16(data, mpa_crc);
 
         // DDP (14 bytes)
-        data.push_back({tagged, last, ddp_reserved});
+        data.push_back({tagged_bit, last, ddp_reserved});
         data.push_back(ddp_version);
         packet_utils::pack_bytes_16(data, queue_number);
         packet_utils::pack_bytes_32(data, msn);
-        packet_utils::pack_bytes_32(data, msg_offset[47:16]);  // upper 32 bits
-        packet_utils::pack_bytes_16(data, msg_offset[15:0]);   // lower 16 bits
+        begin
+            bit [31:0] _tmp = msg_offset[47:16];
+            packet_utils::pack_bytes_32(data, _tmp);  // upper 32 bits
+        end
+        begin
+            bit [15:0] _tmp = msg_offset[15:0];
+            packet_utils::pack_bytes_16(data, _tmp);   // lower 16 bits
+        end
 
         // RDMAP (8 bytes)
         data.push_back({rdmap_version, rdmap_opcode});
@@ -97,7 +103,7 @@ class iwarp_header extends protocol_base;
 
         // DDP (14 bytes)
         byte0        = data[offset]; offset++;
-        tagged       = byte0[7];
+        tagged_bit       = byte0[7];
         last         = byte0[6];
         ddp_reserved = byte0[5:0];
         ddp_version  = data[offset]; offset++;
@@ -130,7 +136,7 @@ class iwarp_header extends protocol_base;
         h.mpa_length     = mpa_length;
         h.mpa_reserved   = mpa_reserved;
         h.mpa_crc        = mpa_crc;
-        h.tagged         = tagged;
+        h.tagged_bit         = tagged_bit;
         h.last           = last;
         h.ddp_reserved   = ddp_reserved;
         h.ddp_version    = ddp_version;
@@ -153,7 +159,7 @@ class iwarp_header extends protocol_base;
                (queue_number  == o.queue_number)  &&
                (msn           == o.msn)           &&
                (sink_stag     == o.sink_stag)     &&
-               (tagged        == o.tagged);
+               (tagged_bit        == o.tagged_bit);
     endfunction
 
     virtual function string to_string();
@@ -164,7 +170,7 @@ class iwarp_header extends protocol_base;
         s = {s, $sformatf("  mpa_reserved: 0x%04x\n", mpa_reserved)};
         s = {s, $sformatf("  mpa_crc     : 0x%04x\n", mpa_crc)};
         s = {s, "  --- DDP ---\n"};
-        s = {s, $sformatf("  tagged      : %0b\n",   tagged)};
+        s = {s, $sformatf("  tagged_bit      : %0b\n",   tagged_bit)};
         s = {s, $sformatf("  last        : %0b\n",   last)};
         s = {s, $sformatf("  ddp_version : %0d\n",   ddp_version)};
         s = {s, $sformatf("  queue_number: %0d\n",   queue_number)};

@@ -28,7 +28,7 @@ class ipv6_hbh_header extends protocol_base;
 
     rand bit [7:0]        next_header;
     rand bit [7:0]        hdr_ext_len;
-    byte unsigned         options[];   // type-specific data (default: 6 padding bytes)
+    byte unsigned         options[$];   // type-specific data (default: 6 padding bytes)
 
     // ----- HBH Option rand controls -----
     rand bit        opt_router_alert_en;
@@ -47,7 +47,7 @@ class ipv6_hbh_header extends protocol_base;
         proto_type  = PROTO_IPV6_HBH;
         next_header = 8'd59; // No Next Header
         hdr_ext_len = 8'd0;
-        options     = new[6];
+        options = '{0,0,0,0,0,0};
         foreach (options[i]) options[i] = 8'h00;
         opt_router_alert_en  = 0;
         opt_router_alert_val = 0;
@@ -94,9 +94,9 @@ class ipv6_hbh_header extends protocol_base;
 
         total_len   = get_header_length();
         options_len = total_len - 2;
-        options     = new[options_len];
+        options.delete();
         for (int i = 0; i < options_len; i++) begin
-            options[i] = data[offset];
+            options.push_back(data[offset]);
             offset++;
         end
     endfunction
@@ -145,8 +145,7 @@ class ipv6_hbh_header extends protocol_base;
         ipv6_hbh_header h = new();
         h.next_header            = next_header;
         h.hdr_ext_len            = hdr_ext_len;
-        h.options                = new[options.size()];
-        foreach (options[i]) h.options[i] = options[i];
+        h.options = options;
         h.opt_router_alert_en    = opt_router_alert_en;
         h.opt_router_alert_val   = opt_router_alert_val;
         h.opt_jumbo_en           = opt_jumbo_en;
@@ -428,7 +427,7 @@ class ipv6_dest_header extends protocol_base;
 
     rand bit [7:0]        next_header;
     rand bit [7:0]        hdr_ext_len;
-    byte unsigned         options[];   // type-specific data (default: 6 padding bytes)
+    byte unsigned         options[$];   // type-specific data (default: 6 padding bytes)
 
     // ----- Dest Option rand controls -----
     rand bit        opt_custom_en;
@@ -445,8 +444,7 @@ class ipv6_dest_header extends protocol_base;
         proto_type  = PROTO_IPV6_DEST;
         next_header      = 8'd59;
         hdr_ext_len      = 8'd0;
-        options          = new[6];
-        foreach (options[i]) options[i] = 8'h00;
+        options = '{0,0,0,0,0,0};
         opt_custom_en    = 0;
         opt_custom_type  = 8'h1E;
         opt_custom_data  = 32'h0;
@@ -489,9 +487,9 @@ class ipv6_dest_header extends protocol_base;
 
         total_len   = get_header_length();
         options_len = total_len - 2;
-        options     = new[options_len];
+        options.delete();
         for (int i = 0; i < options_len; i++) begin
-            options[i] = data[offset];
+            options.push_back(data[offset]);
             offset++;
         end
     endfunction
@@ -530,8 +528,7 @@ class ipv6_dest_header extends protocol_base;
         ipv6_dest_header h = new();
         h.next_header     = next_header;
         h.hdr_ext_len     = hdr_ext_len;
-        h.options         = new[options.size()];
-        foreach (options[i]) h.options[i] = options[i];
+        h.options = options;
         h.opt_custom_en   = opt_custom_en;
         h.opt_custom_type = opt_custom_type;
         h.opt_custom_data = opt_custom_data;

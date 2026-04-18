@@ -172,7 +172,8 @@ program test_parser;
 
             // Corrupt IPv4 version
             begin
-                ipv4_header ip4 = pkt.get_ipv4(0);
+                ipv4_header ip4;
+                ip4 = pkt.get_ipv4(0);
                 ip4.version = 5;  // Wrong version
             end
 
@@ -196,7 +197,8 @@ program test_parser;
 
             // Set SYN+FIN (unusual)
             begin
-                tcp_header tcp = pkt.get_tcp(0);
+                tcp_header tcp;
+                tcp = pkt.get_tcp(0);
                 tcp.flags = 9'b000000011;  // SYN+FIN
             end
 
@@ -220,7 +222,8 @@ program test_parser;
 
             // Corrupt IPv4 checksum
             begin
-                ipv4_header ip4 = pkt.get_ipv4(0);
+                ipv4_header ip4;
+                ip4 = pkt.get_ipv4(0);
                 ip4.header_checksum = 16'hDEAD;
             end
 
@@ -269,7 +272,8 @@ program test_parser;
             // Compare original and parsed
             begin
                 packet_comparator comp = new();
-                bit pass = comp.compare_and_print(pkt, parsed);
+                bit pass;
+                pass = comp.compare_and_print(pkt, parsed);
                 check("verify_en: round-trip compare", pass == 1);
             end
         end

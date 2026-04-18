@@ -2,6 +2,8 @@
 `ifndef PACKET_DEFINES_SV
 `define PACKET_DEFINES_SV
 
+typedef byte unsigned byte_queue[$];
+
 typedef enum int {
     // L2
     PROTO_ETHERNET      = 0,
@@ -65,6 +67,7 @@ typedef enum int {
     // Special
     PROTO_RAW_PAYLOAD   = 99
 } protocol_type_e;
+typedef protocol_type_e proto_chain_t[$];
 
 typedef enum int {
     // =========================================================
@@ -80,6 +83,16 @@ typedef enum int {
     ETH_IPV6_SCTP                           = 7,
     ETH_ARP                                 = 8,
     ETH_IPV4_IGMP                                = 9,
+
+    // =========================================================
+    // VLAN: ETH + VLAN + L3 + L4
+    // =========================================================
+    ETH_VLAN_IPV4_TCP                       = 120,
+    ETH_VLAN_IPV4_UDP                       = 121,
+    ETH_VLAN_IPV6_TCP                       = 122,
+    ETH_VLAN_IPV6_UDP                       = 123,
+    ETH_VLAN_IPV4_UDP_VXLAN_ETH_IPV4_TCP    = 124,
+    ETH_VLAN_IPV4_UDP_ROCEV2                = 125,
 
     // =========================================================
     // MPLS: ETH + MPLS + L3 + L4

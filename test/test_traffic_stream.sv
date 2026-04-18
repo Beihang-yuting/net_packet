@@ -36,7 +36,7 @@ program test_traffic_stream;
             stream.base_pkt  = base;
             stream.pkt_count = 5;
             stream.modifiers.push_back(mod);
-            stream.generate(pkts);
+            stream.gen_packets(pkts);
 
             check("stream_inc: pkt count", pkts.size() == 5);
 
@@ -50,7 +50,7 @@ program test_traffic_stream;
                 check("stream_inc: pkt[4] src", ip4.src_addr == 32'hC0A80005);
             end
 
-            // Verify all packets are packed
+            // Verify all packets are packed_data
             check("stream_inc: pkt[0] has raw_data", pkts[0].raw_data.size() == 64);
         end
 
@@ -77,7 +77,7 @@ program test_traffic_stream;
             stream.pkt_count = 3;
             stream.modifiers.push_back(mod_ip);
             stream.modifiers.push_back(mod_port);
-            stream.generate(pkts);
+            stream.gen_packets(pkts);
 
             check("stream_multi: pkt count", pkts.size() == 3);
 
@@ -106,7 +106,7 @@ program test_traffic_stream;
             stream.base_pkt  = base;
             stream.pkt_count = 5;
             stream.modifiers.push_back(mod);
-            stream.generate(pkts);
+            stream.gen_packets(pkts);
 
             check("stream_list: pkt count", pkts.size() == 5);
 
@@ -138,7 +138,7 @@ program test_traffic_stream;
             stream.base_pkt  = base;
             stream.pkt_count = 3;
             stream.modifiers.push_back(mod);
-            stream.generate(pkts);
+            stream.gen_packets(pkts);
 
             begin
                 ipv4_header ip0, ip1, ip2;

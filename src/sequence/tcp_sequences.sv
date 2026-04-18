@@ -27,7 +27,7 @@ class tcp_handshake_seq extends protocol_sequence;
         isn_server = 32'd2000;
     endfunction
 
-    virtual function void generate();
+    virtual function void gen_packets();
         packets.delete();
 
         // Packet 1: SYN (client -> server)
@@ -135,7 +135,7 @@ class tcp_full_session_seq extends protocol_sequence;
         data_pkt_len = 100;
     endfunction
 
-    virtual function void generate();
+    virtual function void gen_packets();
         bit [31:0] client_seq;
         bit [31:0] server_seq;
         int payload_per_pkt;

@@ -108,6 +108,8 @@ class gtp_u_header extends protocol_base;
 
     virtual function void unpack_header(ref byte unsigned data[$], ref int offset);
         byte unsigned b0;
+        int ext_len;
+        int ext_bytes;
         b0             = data[offset]; offset++;
         version        = b0[7:5];
         pt             = b0[4];
@@ -124,8 +126,8 @@ class gtp_u_header extends protocol_base;
             next_ext_hdr_type = data[offset]; offset++;
         end
         if (e_flag && next_ext_hdr_type != 0 && offset < data.size()) begin
-            int ext_len = data[offset]; offset++;  // length in 4-byte units
-            int ext_bytes = ext_len * 4 - 2;  // minus length byte and next_type byte
+            ext_len = data[offset]; offset++;  // length in 4-byte units
+            ext_bytes = ext_len * 4 - 2;  // minus length byte and next_type byte
             for (int i = 0; i < 4 && i < ext_bytes; i++) begin
                 ext_hdr_data[i] = data[offset]; offset++;
             end
@@ -209,7 +211,7 @@ class gtp_u_header extends protocol_base;
     // ext_data: content bytes (will be padded to make total multiple of 4)
     // next_type: next extension header type (0=no more)
     // Returns: {length, content_bytes..., next_type} with proper padding
-    static function byte unsigned build_ext_header(
+    static function byte_queue build_ext_header(
         byte unsigned ext_data[$],
         bit [7:0] next_type = 0
     );

@@ -22,7 +22,7 @@ class ptp_sync_seq extends protocol_sequence;
         domain         = 0;
     endfunction
 
-    virtual function void generate();
+    virtual function void gen_packets();
         packets.delete();
 
         // Sync (message_type = 0x0)

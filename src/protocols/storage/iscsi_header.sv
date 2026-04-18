@@ -67,8 +67,14 @@ class iscsi_header extends protocol_base;
         data.push_back(data_segment_len[15:8]);
         data.push_back(data_segment_len[7:0]);
         // Bytes 8-15: lun (64-bit as 2x 32-bit)
-        packet_utils::pack_bytes_32(data, lun[63:32]);
-        packet_utils::pack_bytes_32(data, lun[31:0]);
+        begin
+            bit [31:0] _tmp = lun[63:32];
+            packet_utils::pack_bytes_32(data, _tmp);
+        end
+        begin
+            bit [31:0] _tmp = lun[31:0];
+            packet_utils::pack_bytes_32(data, _tmp);
+        end
         // Bytes 16-19: initiator_task_tag
         packet_utils::pack_bytes_32(data, initiator_task_tag);
         // Bytes 20-47: opcode_specific (28 bytes)

@@ -15,15 +15,15 @@ class traffic_stream;
     endfunction
 
     // Generate stream of packets
-    function void generate(ref packet pkts[$]);
+    function void gen_packets(ref packet pkts[$]);
         pkts.delete();
 
         if (base_pkt == null) begin
-            $warning("traffic_stream::generate: base_pkt is null");
+            $warning("traffic_stream::gen_packets: base_pkt is null");
             return;
         end
 
-        // Ensure base_pkt is packed
+        // Ensure base_pkt is packed_data
         if (base_pkt.raw_data.size() == 0)
             base_pkt.do_pack();
 

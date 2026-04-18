@@ -128,6 +128,7 @@ class tcp_header extends protocol_base;
     virtual function void unpack_header(ref byte unsigned data[$], ref int offset);
         bit [7:0] doff_res_ns;
         bit [7:0] flags_lo;
+        int opt_bytes;
 
         src_port = packet_utils::unpack_bytes_16(data, offset);
         dst_port = packet_utils::unpack_bytes_16(data, offset);
@@ -147,7 +148,7 @@ class tcp_header extends protocol_base;
         // Read options if data_offset > 5
         options.delete();
         if (data_offset > 5) begin
-            int opt_bytes = (data_offset - 5) * 4;
+            opt_bytes = (data_offset - 5) * 4;
             for (int i = 0; i < opt_bytes; i++) begin
                 options.push_back(data[offset]);
                 offset++;
@@ -166,6 +167,7 @@ class tcp_header extends protocol_base;
             case (next_proto)
                 PROTO_NVME_TCP: dst_port = 16'd4420;
                 PROTO_ISCSI:    dst_port = 16'd3260;
+                PROTO_IWARP:    dst_port = 16'd5044;
                 PROTO_HTTP:     dst_port = 16'd80;
                 PROTO_BGP:      dst_port = 16'd179;
                 default: ;
@@ -308,28 +310,28 @@ class tcp_header extends protocol_base;
     // Individual option builders — return byte arrays
 
     // MSS (Kind=2, Len=4): Maximum Segment Size
-    static function byte unsigned opt_mss(bit [15:0] mss_val);
+    static function byte_queue opt_mss(bit [15:0] mss_val);
         byte unsigned opt[$];
         opt = '{8'd2, 8'd4, mss_val[15:8], mss_val[7:0]};
         return opt;
     endfunction
 
     // Window Scale (Kind=3, Len=3): Window scaling factor
-    static function byte unsigned opt_window_scale(bit [7:0] shift_count);
+    static function byte_queue opt_window_scale(bit [7:0] shift_count);
         byte unsigned opt[$];
         opt = '{8'd3, 8'd3, shift_count};
         return opt;
     endfunction
 
     // SACK Permitted (Kind=4, Len=2)
-    static function byte unsigned opt_sack_permitted();
+    static function byte_queue opt_sack_permitted();
         byte unsigned opt[$];
         opt = '{8'd4, 8'd2};
         return opt;
     endfunction
 
     // Timestamps (Kind=8, Len=10): TSval + TSecr
-    static function byte unsigned opt_timestamps(bit [31:0] ts_val, bit [31:0] ts_ecr);
+    static function byte_queue opt_timestamps(bit [31:0] ts_val, bit [31:0] ts_ecr);
         byte unsigned opt[$];
         opt = '{8'd8, 8'd10,
                 ts_val[31:24], ts_val[23:16], ts_val[15:8], ts_val[7:0],
@@ -338,14 +340,14 @@ class tcp_header extends protocol_base;
     endfunction
 
     // NOP (Kind=1): single byte padding
-    static function byte unsigned opt_nop();
+    static function byte_queue opt_nop();
         byte unsigned opt[$];
         opt = '{8'd1};
         return opt;
     endfunction
 
     // EOL (Kind=0): end of options list
-    static function byte unsigned opt_eol();
+    static function byte_queue opt_eol();
         byte unsigned opt[$];
         opt = '{8'd0};
         return opt;
@@ -353,7 +355,7 @@ class tcp_header extends protocol_base;
 
     // SACK (Kind=5, Len=variable): Selective ACK blocks
     // Each block = {left_edge(32), right_edge(32)}
-    static function byte unsigned opt_sack(bit [31:0] blocks[$]);
+    static function byte_queue opt_sack(bit [31:0] blocks[$]);
         byte unsigned opt[$];
         int num_blocks = blocks.size() / 2;
         opt.push_back(8'd5);
@@ -370,7 +372,7 @@ class tcp_header extends protocol_base;
     // Build combined options with automatic NOP padding to 4-byte boundary
     // Input: array of individual option byte arrays concatenated
     // Pads with NOP/EOL to make total length multiple of 4
-    static function byte unsigned build_options(byte unsigned raw_opts[$]);
+    static function byte_queue build_options(byte unsigned raw_opts[$]);
         byte unsigned result[$];
         int pad_needed;
         result = raw_opts;
@@ -381,7 +383,7 @@ class tcp_header extends protocol_base;
     endfunction
 
     // Convenience: build common SYN options (MSS + WScale + SACK-Permitted + Timestamps + NOP padding)
-    static function byte unsigned opt_syn_default(
+    static function byte_queue opt_syn_default(
         bit [15:0] mss_val = 1460,
         bit [7:0]  wscale = 7,
         bit [31:0] ts_val = 0,

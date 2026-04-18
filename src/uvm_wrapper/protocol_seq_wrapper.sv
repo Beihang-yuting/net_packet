@@ -24,7 +24,7 @@ class protocol_seq_wrapper extends uvm_sequence #(packet_item);
             `uvm_error("PROTOCOL_SEQ_WRAPPER", "inner_seq is null")
             return;
         end
-        inner_seq.generate();
+        inner_seq.gen_packets();
         inner_seq.get_packets(pkts);
         foreach (pkts[i]) begin
             packet_item item = packet_item::type_id::create($sformatf("item_%0d", i));
@@ -48,7 +48,7 @@ class protocol_seq_wrapper;
         packet pkts[$];
         items.delete();
         if (inner_seq == null) return;
-        inner_seq.generate();
+        inner_seq.gen_packets();
         inner_seq.get_packets(pkts);
         foreach (pkts[i]) begin
             packet_item item = new($sformatf("item_%0d", i));

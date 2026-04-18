@@ -33,7 +33,7 @@ program test_protocol_headers;
         // ---- Ethernet ----
         begin
             eth_header eth = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             byte unsigned raw[$];
             int offset;
 
@@ -44,18 +44,18 @@ program test_protocol_headers;
             eth.src_mac = 48'h665544332211;
             eth.ethertype = ETHERTYPE_IPV4;
             eth.calc_fields('{}, PROTO_IPV4);
-            eth.pack_header(packed);
+            eth.pack_header(pkd);
 
-            check("eth: pack size", packed.size() == 14);
-            check("eth: pack dst_mac[0]", packed[0] == 8'h00);
-            check("eth: pack dst_mac[5]", packed[5] == 8'h55);
-            check("eth: pack src_mac[0]", packed[6] == 8'h66);
-            check("eth: pack ethertype", {packed[12], packed[13]} == 16'h0800);
+            check("eth: pack size", pkd.size() == 14);
+            check("eth: pack dst_mac[0]", pkd[0] == 8'h00);
+            check("eth: pack dst_mac[5]", pkd[5] == 8'h55);
+            check("eth: pack src_mac[0]", pkd[6] == 8'h66);
+            check("eth: pack ethertype", {pkd[12], pkd[13]} == 16'h0800);
 
             begin
                 eth_header eth2 = new();
                 offset = 0;
-                eth2.unpack_header(packed, offset);
+                eth2.unpack_header(pkd, offset);
                 check("eth: unpack dst_mac", eth2.dst_mac == 48'h001122334455);
                 check("eth: unpack src_mac", eth2.src_mac == 48'h665544332211);
                 check("eth: unpack ethertype", eth2.ethertype == ETHERTYPE_IPV4);
@@ -63,7 +63,8 @@ program test_protocol_headers;
             end
 
             begin
-                protocol_base eth3 = eth.clone();
+                protocol_base eth3;
+                eth3 = eth.clone();
                 check("eth: clone compare", eth.compare(eth3));
             end
 
@@ -83,7 +84,7 @@ program test_protocol_headers;
         // ---- VLAN ----
         begin
             vlan_header vlan = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             check("vlan: proto_type", vlan.proto_type == PROTO_VLAN);
@@ -93,17 +94,17 @@ program test_protocol_headers;
             vlan.dei     = 1;
             vlan.vlan_id = 12'h123;
             vlan.ethertype = ETHERTYPE_IPV4;
-            vlan.pack_header(packed);
+            vlan.pack_header(pkd);
 
-            check("vlan: pack size", packed.size() == 4);
+            check("vlan: pack size", pkd.size() == 4);
             // TCI = {pcp=101, dei=1, vlan_id=0x123} = 0xB123
-            check("vlan: pack TCI", {packed[0], packed[1]} == 16'hB123);
-            check("vlan: pack ethertype", {packed[2], packed[3]} == 16'h0800);
+            check("vlan: pack TCI", {pkd[0], pkd[1]} == 16'hB123);
+            check("vlan: pack ethertype", {pkd[2], pkd[3]} == 16'h0800);
 
             begin
                 vlan_header vlan2 = new();
                 offset = 0;
-                vlan2.unpack_header(packed, offset);
+                vlan2.unpack_header(pkd, offset);
                 check("vlan: unpack pcp", vlan2.pcp == 3'b101);
                 check("vlan: unpack dei", vlan2.dei == 1);
                 check("vlan: unpack vlan_id", vlan2.vlan_id == 12'h123);
@@ -112,7 +113,8 @@ program test_protocol_headers;
             end
 
             begin
-                protocol_base vlan3 = vlan.clone();
+                protocol_base vlan3;
+                vlan3 = vlan.clone();
                 check("vlan: clone compare", vlan.compare(vlan3));
             end
 
@@ -124,7 +126,7 @@ program test_protocol_headers;
         // ---- IPv4 ----
         begin
             ipv4_header ip = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             check("ipv4: proto_type", ip.proto_type == PROTO_IPV4);
@@ -147,21 +149,21 @@ program test_protocol_headers;
             check("ipv4: calc protocol", ip.protocol == IP_PROTO_TCP);
             check("ipv4: calc total_length", ip.total_length == 30);
 
-            ip.pack_header(packed);
-            check("ipv4: pack size", packed.size() == 20);
-            check("ipv4: pack version_ihl", packed[0] == 8'h45);
+            ip.pack_header(pkd);
+            check("ipv4: pack size", pkd.size() == 20);
+            check("ipv4: pack version_ihl", pkd[0] == 8'h45);
 
-            // Verify checksum: ones_complement_checksum of packed header should be 0
+            // Verify checksum: ones_complement_checksum of pkd header should be 0
             begin
                 bit [15:0] verify_cksum;
-                verify_cksum = packet_utils::ones_complement_checksum(packed);
+                verify_cksum = packet_utils::ones_complement_checksum(pkd);
                 check("ipv4: checksum verification", verify_cksum == 0);
             end
 
             begin
                 ipv4_header ip2 = new();
                 offset = 0;
-                ip2.unpack_header(packed, offset);
+                ip2.unpack_header(pkd, offset);
                 check("ipv4: unpack version", ip2.version == 4);
                 check("ipv4: unpack ihl", ip2.ihl == 5);
                 check("ipv4: unpack src_addr", ip2.src_addr == 32'hC0A80001);
@@ -171,7 +173,8 @@ program test_protocol_headers;
             end
 
             begin
-                protocol_base ip3 = ip.clone();
+                protocol_base ip3;
+                ip3 = ip.clone();
                 check("ipv4: clone compare", ip.compare(ip3));
             end
         end
@@ -179,7 +182,7 @@ program test_protocol_headers;
         // ---- IPv6 ----
         begin
             ipv6_header ip6 = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             check("ipv6: proto_type", ip6.proto_type == PROTO_IPV6);
@@ -200,15 +203,15 @@ program test_protocol_headers;
             check("ipv6: calc next_header", ip6.next_header == IPV6_NH_TCP);
             check("ipv6: calc payload_length", ip6.payload_length == 20);
 
-            ip6.pack_header(packed);
-            check("ipv6: pack size", packed.size() == 40);
+            ip6.pack_header(pkd);
+            check("ipv6: pack size", pkd.size() == 40);
             // First nibble should be 6 (version)
-            check("ipv6: pack version", packed[0][7:4] == 4'h6);
+            check("ipv6: pack version", pkd[0][7:4] == 4'h6);
 
             begin
                 ipv6_header ip6b = new();
                 offset = 0;
-                ip6b.unpack_header(packed, offset);
+                ip6b.unpack_header(pkd, offset);
                 check("ipv6: unpack version", ip6b.version == 6);
                 check("ipv6: unpack tc", ip6b.traffic_class == 8'hAB);
                 check("ipv6: unpack flow_label", ip6b.flow_label == 20'h12345);
@@ -219,7 +222,8 @@ program test_protocol_headers;
             end
 
             begin
-                protocol_base ip6c = ip6.clone();
+                protocol_base ip6c;
+                ip6c = ip6.clone();
                 check("ipv6: clone compare", ip6.compare(ip6c));
             end
         end
@@ -227,7 +231,7 @@ program test_protocol_headers;
         // ---- ARP ----
         begin
             arp_header arp = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             check("arp: proto_type", arp.proto_type == PROTO_ARP);
@@ -238,17 +242,17 @@ program test_protocol_headers;
             arp.sender_ip  = 32'hC0A80001;
             arp.target_mac = 48'h000000000000;
             arp.target_ip  = 32'hC0A80002;
-            arp.pack_header(packed);
+            arp.pack_header(pkd);
 
-            check("arp: pack size", packed.size() == 28);
-            check("arp: pack hw_type", {packed[0], packed[1]} == 16'h0001);
-            check("arp: pack proto_type", {packed[2], packed[3]} == 16'h0800);
-            check("arp: pack opcode", {packed[6], packed[7]} == 16'h0001);
+            check("arp: pack size", pkd.size() == 28);
+            check("arp: pack hw_type", {pkd[0], pkd[1]} == 16'h0001);
+            check("arp: pack proto_type", {pkd[2], pkd[3]} == 16'h0800);
+            check("arp: pack opcode", {pkd[6], pkd[7]} == 16'h0001);
 
             begin
                 arp_header arp2 = new();
                 offset = 0;
-                arp2.unpack_header(packed, offset);
+                arp2.unpack_header(pkd, offset);
                 check("arp: unpack hw_type", arp2.hw_type == 1);
                 check("arp: unpack opcode", arp2.opcode == 1);
                 check("arp: unpack sender_mac", arp2.sender_mac == 48'hAABBCCDDEEFF);
@@ -258,7 +262,8 @@ program test_protocol_headers;
             end
 
             begin
-                protocol_base arp3 = arp.clone();
+                protocol_base arp3;
+                arp3 = arp.clone();
                 check("arp: clone compare", arp.compare(arp3));
             end
         end
@@ -266,7 +271,7 @@ program test_protocol_headers;
         // ---- TCP ----
         begin
             tcp_header tcp = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             check("tcp: proto_type", tcp.proto_type == PROTO_TCP);
@@ -289,15 +294,15 @@ program test_protocol_headers;
             check("tcp: calc data_offset", tcp.data_offset == 5);
             check("tcp: calc checksum", tcp.checksum == 0);
 
-            tcp.pack_header(packed);
-            check("tcp: pack size", packed.size() == 20);
-            check("tcp: pack src_port", {packed[0], packed[1]} == 16'h1234);
-            check("tcp: pack dst_port", {packed[2], packed[3]} == 16'h0050);
+            tcp.pack_header(pkd);
+            check("tcp: pack size", pkd.size() == 20);
+            check("tcp: pack src_port", {pkd[0], pkd[1]} == 16'h1234);
+            check("tcp: pack dst_port", {pkd[2], pkd[3]} == 16'h0050);
 
             begin
                 tcp_header tcp2 = new();
                 offset = 0;
-                tcp2.unpack_header(packed, offset);
+                tcp2.unpack_header(pkd, offset);
                 check("tcp: unpack src_port", tcp2.src_port == 16'h1234);
                 check("tcp: unpack dst_port", tcp2.dst_port == 16'h0050);
                 check("tcp: unpack seq_num", tcp2.seq_num == 32'hDEADBEEF);
@@ -309,7 +314,8 @@ program test_protocol_headers;
             end
 
             begin
-                protocol_base tcp3 = tcp.clone();
+                protocol_base tcp3;
+                tcp3 = tcp.clone();
                 check("tcp: clone compare", tcp.compare(tcp3));
             end
         end
@@ -317,7 +323,7 @@ program test_protocol_headers;
         // ---- UDP ----
         begin
             udp_header udp = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             check("udp: proto_type", udp.proto_type == PROTO_UDP);
@@ -335,16 +341,16 @@ program test_protocol_headers;
             check("udp: calc length", udp.length == 28);
             check("udp: calc checksum", udp.checksum == 0);
 
-            udp.pack_header(packed);
-            check("udp: pack size", packed.size() == 8);
-            check("udp: pack src_port", {packed[0], packed[1]} == 16'h1234);
-            check("udp: pack dst_port", {packed[2], packed[3]} == 16'h0035);
-            check("udp: pack length", {packed[4], packed[5]} == 16'h001C);
+            udp.pack_header(pkd);
+            check("udp: pack size", pkd.size() == 8);
+            check("udp: pack src_port", {pkd[0], pkd[1]} == 16'h1234);
+            check("udp: pack dst_port", {pkd[2], pkd[3]} == 16'h0035);
+            check("udp: pack length", {pkd[4], pkd[5]} == 16'h001C);
 
             begin
                 udp_header udp2 = new();
                 offset = 0;
-                udp2.unpack_header(packed, offset);
+                udp2.unpack_header(pkd, offset);
                 check("udp: unpack src_port", udp2.src_port == 16'h1234);
                 check("udp: unpack dst_port", udp2.dst_port == 16'h0035);
                 check("udp: unpack length", udp2.length == 28);
@@ -352,7 +358,8 @@ program test_protocol_headers;
             end
 
             begin
-                protocol_base udp3 = udp.clone();
+                protocol_base udp3;
+                udp3 = udp.clone();
                 check("udp: clone compare", udp.compare(udp3));
             end
         end
@@ -360,7 +367,7 @@ program test_protocol_headers;
         // ---- ICMP ----
         begin
             icmp_header icmp = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             check("icmp: proto_type", icmp.proto_type == PROTO_ICMP);
@@ -390,15 +397,15 @@ program test_protocol_headers;
                 check("icmp: checksum verification", verify_cksum == 0);
             end
 
-            icmp.pack_header(packed);
-            check("icmp: pack size", packed.size() == 8);
-            check("icmp: pack type", packed[0] == 8);
-            check("icmp: pack code", packed[1] == 0);
+            icmp.pack_header(pkd);
+            check("icmp: pack size", pkd.size() == 8);
+            check("icmp: pack type", pkd[0] == 8);
+            check("icmp: pack code", pkd[1] == 0);
 
             begin
                 icmp_header icmp2 = new();
                 offset = 0;
-                icmp2.unpack_header(packed, offset);
+                icmp2.unpack_header(pkd, offset);
                 check("icmp: unpack type", icmp2.icmp_type == 8);
                 check("icmp: unpack code", icmp2.icmp_code == 0);
                 check("icmp: unpack identifier", icmp2.identifier == 16'h0001);
@@ -407,7 +414,8 @@ program test_protocol_headers;
             end
 
             begin
-                protocol_base icmp3 = icmp.clone();
+                protocol_base icmp3;
+                icmp3 = icmp.clone();
                 check("icmp: clone compare", icmp.compare(icmp3));
             end
         end
@@ -415,7 +423,7 @@ program test_protocol_headers;
         // ---- ICMPv6 ----
         begin
             icmpv6_header icmp6 = new();
-            byte unsigned packed[$];
+            byte unsigned pkd[$];
             int offset;
 
             check("icmpv6: proto_type", icmp6.proto_type == PROTO_ICMPV6);
@@ -431,15 +439,15 @@ program test_protocol_headers;
             icmp6.calc_fields('{}, PROTO_RAW_PAYLOAD);
             check("icmpv6: calc zeros checksum", icmp6.checksum == 0);
 
-            icmp6.pack_header(packed);
-            check("icmpv6: pack size", packed.size() == 8);
-            check("icmpv6: pack type", packed[0] == 128);
-            check("icmpv6: pack code", packed[1] == 0);
+            icmp6.pack_header(pkd);
+            check("icmpv6: pack size", pkd.size() == 8);
+            check("icmpv6: pack type", pkd[0] == 128);
+            check("icmpv6: pack code", pkd[1] == 0);
 
             begin
                 icmpv6_header icmp6b = new();
                 offset = 0;
-                icmp6b.unpack_header(packed, offset);
+                icmp6b.unpack_header(pkd, offset);
                 check("icmpv6: unpack type", icmp6b.icmp_type == 128);
                 check("icmpv6: unpack identifier", icmp6b.identifier == 16'h0042);
                 check("icmpv6: unpack sequence_num", icmp6b.sequence_num == 16'h0007);
@@ -447,7 +455,8 @@ program test_protocol_headers;
             end
 
             begin
-                protocol_base icmp6c = icmp6.clone();
+                protocol_base icmp6c;
+                icmp6c = icmp6.clone();
                 check("icmpv6: clone compare", icmp6.compare(icmp6c));
             end
         end

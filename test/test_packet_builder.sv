@@ -156,9 +156,11 @@ program test_packet_builder;
         pkt.payload_mode = PAYLOAD_INCREMENT;
         pkt.do_pack();
         begin
-            int hdr_len = pkt.get_all_headers_length();
-            int payload_len = 64 - hdr_len;
+            int hdr_len;
+            int payload_len;
             bit incr_ok = 1;
+            hdr_len = pkt.get_all_headers_length();
+            payload_len = 64 - hdr_len;
             check("payload_incr: raw_data.size() == 64", pkt.raw_data.size() == 64);
             for (int i = 0; i < payload_len; i++) begin
                 if (pkt.raw_data[hdr_len + i] != (i % 256)) begin

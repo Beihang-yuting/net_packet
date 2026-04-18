@@ -197,9 +197,13 @@ program test_rdma_storage_packet;
                 check("iwarp: unpack layer count", pkt2.layer_stack.size() == 4);
                 begin
                     iwarp_header iw2;
-                    $cast(iw2, pkt2.get_layer(PROTO_IWARP));
-                    check("iwarp: unpack opcode", iw2.rdmap_opcode == 4'h1);
-                    check("iwarp: unpack stag", iw2.sink_stag == 32'h12345678);
+                    if ($cast(iw2, pkt2.get_layer(PROTO_IWARP)) && iw2 != null) begin
+                        check("iwarp: unpack opcode", iw2.rdmap_opcode == 4'h1);
+                        check("iwarp: unpack stag", iw2.sink_stag == 32'h12345678);
+                    end else begin
+                        check("iwarp: unpack opcode", 0);
+                        check("iwarp: unpack stag", 0);
+                    end
                 end
             end
         end

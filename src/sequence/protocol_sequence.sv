@@ -9,7 +9,7 @@ virtual class protocol_sequence;
     packet packets[$];
 
     // Generate the sequence of packets
-    pure virtual function void generate();
+    pure virtual function void gen_packets();
 
     // Get all generated packets
     function void get_packets(ref packet pkts[$]);

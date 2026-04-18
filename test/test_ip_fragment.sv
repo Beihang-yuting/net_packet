@@ -57,7 +57,8 @@ program test_ip_fragment;
             // Check last fragment: MF=0
             begin
                 ipv4_header ip;
-                int last = fragments.size() - 1;
+                int last;
+                last = fragments.size() - 1;
                 $cast(ip, fragments[last].get_layer(PROTO_IPV4));
                 check("frag: frag[last] MF=0", ip.flags[0] == 0);
             end

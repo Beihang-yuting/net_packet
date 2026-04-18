@@ -95,11 +95,13 @@ class protocol_parser;
     // =========================================================================
     protected function void verify_transport_checksums(packet pkt, ref parse_result_t result);
         for (int i = 0; i < pkt.layer_stack.size(); i++) begin
-            protocol_type_e ptype = pkt.layer_stack[i].proto_type;
+            protocol_type_e ptype;
+            int ip_idx;
+            ptype = pkt.layer_stack[i].proto_type;
             if (ptype != PROTO_TCP && ptype != PROTO_UDP && ptype != PROTO_ICMPV6) continue;
 
             // Find parent IP layer
-            int ip_idx = -1;
+            ip_idx = -1;
             for (int j = i - 1; j >= 0; j--) begin
                 if (pkt.layer_stack[j].proto_type == PROTO_IPV4 ||
                     pkt.layer_stack[j].proto_type == PROTO_IPV6) begin
@@ -186,7 +188,10 @@ class protocol_parser;
                         packet_utils::pack_bytes_32(pseudo_hdr, ip4.dst_addr);
                         pseudo_hdr.push_back(8'h00);
                         pseudo_hdr.push_back(ip4.protocol);
-                        packet_utils::pack_bytes_16(pseudo_hdr, transport_len[15:0]);
+                        begin
+                            bit [15:0] _tl16 = transport_len[15:0];
+                            packet_utils::pack_bytes_16(pseudo_hdr, _tl16);
+                        end
                     end else begin
                         ipv6_header ip6;
                         if (!$cast(ip6, pkt.layer_stack[ip_idx])) continue;
@@ -194,7 +199,10 @@ class protocol_parser;
                             pseudo_hdr.push_back(ip6.src_addr[b*8 +: 8]);
                         for (int b = 15; b >= 0; b--)
                             pseudo_hdr.push_back(ip6.dst_addr[b*8 +: 8]);
-                        packet_utils::pack_bytes_32(pseudo_hdr, transport_len);
+                        begin
+                            bit [31:0] _tl32 = transport_len;
+                            packet_utils::pack_bytes_32(pseudo_hdr, _tl32);
+                        end
                         pseudo_hdr.push_back(8'h00);
                         pseudo_hdr.push_back(8'h00);
                         pseudo_hdr.push_back(8'h00);

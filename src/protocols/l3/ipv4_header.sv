@@ -102,9 +102,13 @@ class ipv4_header extends protocol_base;
     endfunction
 
     virtual function void unpack_header(ref byte unsigned data[$], ref int offset);
-        bit [7:0] ver_ihl = data[offset]; offset++;
-        bit [7:0] dscp_ecn = data[offset]; offset++;
+        bit [7:0] ver_ihl;
+        bit [7:0] dscp_ecn;
         bit [15:0] flags_frag;
+        int opt_bytes;
+
+        ver_ihl = data[offset]; offset++;
+        dscp_ecn = data[offset]; offset++;
 
         version = ver_ihl[7:4];
         ihl     = ver_ihl[3:0];
@@ -125,7 +129,7 @@ class ipv4_header extends protocol_base;
         // Read options if ihl > 5
         options.delete();
         if (ihl > 5) begin
-            int opt_bytes = (ihl - 5) * 4;
+            opt_bytes = (ihl - 5) * 4;
             for (int i = 0; i < opt_bytes; i++) begin
                 options.push_back(data[offset]);
                 offset++;
@@ -174,13 +178,14 @@ class ipv4_header extends protocol_base;
     endfunction
 
     protected function void build_options_from_fields();
+        int len;
         if (!opt_rr_en && !opt_ts_en && !opt_lsr_en) return;
 
         options.delete();
 
         // Record Route (Type=7)
         if (opt_rr_en) begin
-            int len = 3 + opt_rr_slots * 4;
+            len = 3 + opt_rr_slots * 4;
             options.push_back(8'd7);
             options.push_back(len[7:0]);
             options.push_back(8'd4);  // pointer
@@ -190,7 +195,7 @@ class ipv4_header extends protocol_base;
 
         // Timestamp (Type=68)
         if (opt_ts_en) begin
-            int len = 4 + opt_ts_slots * 4;
+            len = 4 + opt_ts_slots * 4;
             options.push_back(8'd68);
             options.push_back(len[7:0]);
             options.push_back(8'd5);  // pointer
@@ -201,7 +206,7 @@ class ipv4_header extends protocol_base;
 
         // Loose Source Route (Type=131)
         if (opt_lsr_en) begin
-            int len = 3 + opt_lsr_count * 4;
+            len = 3 + opt_lsr_count * 4;
             options.push_back(8'd131);
             options.push_back(len[7:0]);
             options.push_back(8'd4);  // pointer
@@ -290,21 +295,21 @@ class ipv4_header extends protocol_base;
     // =========================================================================
 
     // NOP (Type=1, 1 byte)
-    static function byte unsigned opt_nop();
+    static function byte_queue opt_nop();
         byte unsigned opt[$];
         opt = '{8'd1};
         return opt;
     endfunction
 
     // EOL (Type=0, 1 byte)
-    static function byte unsigned opt_eol();
+    static function byte_queue opt_eol();
         byte unsigned opt[$];
         opt = '{8'd0};
         return opt;
     endfunction
 
     // Record Route (Type=7): pointer starts at 4
-    static function byte unsigned opt_record_route(int num_slots = 9);
+    static function byte_queue opt_record_route(int num_slots = 9);
         byte unsigned opt[$];
         int len = 3 + num_slots * 4;
         opt.push_back(8'd7);       // type
@@ -316,7 +321,7 @@ class ipv4_header extends protocol_base;
     endfunction
 
     // Timestamp (Type=68)
-    static function byte unsigned opt_timestamp(int num_slots = 4, bit [3:0] oflw_flag = 0);
+    static function byte_queue opt_timestamp(int num_slots = 4, bit [3:0] oflw_flag = 0);
         byte unsigned opt[$];
         int len = 4 + num_slots * 4;
         opt.push_back(8'd68);      // type
@@ -329,7 +334,7 @@ class ipv4_header extends protocol_base;
     endfunction
 
     // Loose Source Route (Type=131)
-    static function byte unsigned opt_loose_source_route(bit [31:0] route_addrs[$]);
+    static function byte_queue opt_loose_source_route(bit [31:0] route_addrs[$]);
         byte unsigned opt[$];
         int len = 3 + route_addrs.size() * 4;
         opt.push_back(8'd131);     // type
@@ -345,7 +350,7 @@ class ipv4_header extends protocol_base;
     endfunction
 
     // Strict Source Route (Type=137)
-    static function byte unsigned opt_strict_source_route(bit [31:0] route_addrs[$]);
+    static function byte_queue opt_strict_source_route(bit [31:0] route_addrs[$]);
         byte unsigned opt[$];
         int len = 3 + route_addrs.size() * 4;
         opt.push_back(8'd137);     // type
@@ -361,7 +366,7 @@ class ipv4_header extends protocol_base;
     endfunction
 
     // Pad options to 4-byte boundary
-    static function byte unsigned build_options(byte unsigned raw_opts[$]);
+    static function byte_queue build_options(byte unsigned raw_opts[$]);
         byte unsigned result[$];
         int pad_needed;
         result = raw_opts;

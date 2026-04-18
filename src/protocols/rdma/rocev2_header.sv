@@ -256,44 +256,48 @@ class rocev2_bth extends protocol_base;
         bit [31:0] word0 = {opcode, se, mig_req, pad_count, tver, pkey};
         bit [31:0] word1 = {dest_qp, ack_req, reserved1};
         bit [31:0] word2 = {psn, reserved2};
+        bit [31:0] tmp32;
         packet_utils::pack_bytes_32(data, word0);
         packet_utils::pack_bytes_32(data, word1);
         packet_utils::pack_bytes_32(data, word2);
 
         // RETH (16 bytes)
         if (has_reth()) begin
-            packet_utils::pack_bytes_32(data, reth_va[63:32]);
-            packet_utils::pack_bytes_32(data, reth_va[31:0]);
+            tmp32 = reth_va[63:32]; packet_utils::pack_bytes_32(data, tmp32);
+            tmp32 = reth_va[31:0]; packet_utils::pack_bytes_32(data, tmp32);
             packet_utils::pack_bytes_32(data, reth_r_key);
             packet_utils::pack_bytes_32(data, reth_dma_len);
         end
 
         // AETH (4 bytes)
         if (has_aeth()) begin
-            packet_utils::pack_bytes_32(data, {aeth_syndrome, aeth_msn});
+            tmp32 = {aeth_syndrome, aeth_msn}; packet_utils::pack_bytes_32(data, tmp32);
         end
 
         // AtomicETH (28 bytes)
         if (has_atomic_eth()) begin
-            packet_utils::pack_bytes_32(data, atomic_va[63:32]);
-            packet_utils::pack_bytes_32(data, atomic_va[31:0]);
+            tmp32 = atomic_va[63:32]; packet_utils::pack_bytes_32(data, tmp32);
+            tmp32 = atomic_va[31:0]; packet_utils::pack_bytes_32(data, tmp32);
             packet_utils::pack_bytes_32(data, atomic_r_key);
-            packet_utils::pack_bytes_32(data, atomic_swap_add[63:32]);
-            packet_utils::pack_bytes_32(data, atomic_swap_add[31:0]);
-            packet_utils::pack_bytes_32(data, atomic_compare[63:32]);
-            packet_utils::pack_bytes_32(data, atomic_compare[31:0]);
+            tmp32 = atomic_swap_add[63:32]; packet_utils::pack_bytes_32(data, tmp32);
+            tmp32 = atomic_swap_add[31:0]; packet_utils::pack_bytes_32(data, tmp32);
+            tmp32 = atomic_compare[63:32]; packet_utils::pack_bytes_32(data, tmp32);
+            tmp32 = atomic_compare[31:0]; packet_utils::pack_bytes_32(data, tmp32);
         end
 
         // AtomicAckETH (8 bytes)
         if (has_atomic_ack_eth()) begin
-            packet_utils::pack_bytes_32(data, atomic_orig_data[63:32]);
-            packet_utils::pack_bytes_32(data, atomic_orig_data[31:0]);
+            tmp32 = atomic_orig_data[63:32]; packet_utils::pack_bytes_32(data, tmp32);
+            tmp32 = atomic_orig_data[31:0]; packet_utils::pack_bytes_32(data, tmp32);
         end
 
         // DETH (8 bytes)
         if (has_deth()) begin
             packet_utils::pack_bytes_32(data, deth_q_key);
-            packet_utils::pack_bytes_32(data, {deth_src_qp, deth_reserved});
+            begin
+                bit [31:0] _tmp = {deth_src_qp, deth_reserved};
+                packet_utils::pack_bytes_32(data, _tmp);
+            end
         end
 
         // ImmDt (4 bytes)

@@ -33,7 +33,7 @@ program test_protocol_sequences;
             hs.dst_port = 16'd443;
             hs.isn_client = 32'd100;
             hs.isn_server = 32'd200;
-            hs.generate();
+            hs.gen_packets();
             hs.get_packets(pkts);
 
             check("hs: 3 packets", pkts.size() == 3);
@@ -90,7 +90,7 @@ program test_protocol_sequences;
             sess.dst_port        = 16'd80;
             sess.data_pkt_count  = 3;
             sess.data_pkt_len = 100;
-            sess.generate();
+            sess.gen_packets();
             sess.get_packets(pkts);
 
             // 3 handshake + 3 data + 4 teardown = 10
@@ -145,7 +145,7 @@ program test_protocol_sequences;
             arp.dst_mac = 48'hAABBCCDDEEFF;
             arp.src_ip  = 32'hC0A80001;
             arp.dst_ip  = 32'hC0A80002;
-            arp.generate();
+            arp.gen_packets();
             arp.get_packets(pkts);
 
             check("arp: 2 packets", pkts.size() == 2);
@@ -189,7 +189,7 @@ program test_protocol_sequences;
             ping.identifier      = 16'h1234;
             ping.sequence_number = 16'h0001;
             ping.ping_length     = 64;
-            ping.generate();
+            ping.gen_packets();
             ping.get_packets(pkts);
 
             check("icmp: 2 packets", pkts.size() == 2);
@@ -232,7 +232,7 @@ program test_protocol_sequences;
             ptp.port_number    = 16'd1;
             ptp.sequence_id    = 16'd0;
             ptp.domain         = 8'd0;
-            ptp.generate();
+            ptp.gen_packets();
             ptp.get_packets(pkts);
 
             check("ptp: 4 packets", pkts.size() == 4);

@@ -18,7 +18,7 @@ class arp_seq extends protocol_sequence;
         dst_ip  = 32'hC0A80002;
     endfunction
 
-    virtual function void generate();
+    virtual function void gen_packets();
         packets.delete();
 
         // ARP Request (broadcast)
