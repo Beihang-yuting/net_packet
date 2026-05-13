@@ -92,6 +92,16 @@ class vxlan_header extends protocol_base;
         return $sformatf("VXLAN vni:%0d flags:0x%02x", vni, flags);
     endfunction
 
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("vni", path);
+            if (__v != "") vni = 24'(aip_str::str_to_num(__v, __w));
+        end
+`endif
+    endfunction
+
     virtual function void verify(ref string errors[$], ref string warnings[$]);
         // I flag (bit 3) must be set per RFC 7348
         if (flags[3] != 1)

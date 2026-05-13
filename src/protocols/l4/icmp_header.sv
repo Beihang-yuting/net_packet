@@ -103,6 +103,20 @@ class icmp_header extends protocol_base;
                          icmp_type, icmp_code, identifier, sequence_num);
     endfunction
 
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("icmp_type", path);
+            if (__v != "") icmp_type = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("code", path);
+            if (__v != "") icmp_code = 8'(aip_str::str_to_num(__v, __w));
+        end
+`endif
+    endfunction
+
     virtual function void verify(ref string errors[$], ref string warnings[$]);
         // ICMP checksum (covers entire ICMP message, no pseudo-header)
         begin

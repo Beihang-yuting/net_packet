@@ -14,6 +14,12 @@ class vlan_header extends protocol_base;
     constraint c_default {
         soft pcp inside {[0:7]};
         soft vlan_id inside {[1:4094]};
+        // Ethertype: exclude values that the parser maps to a known next-layer protocol.
+        // calc_fields() will override with the correct value when a next layer exists.
+        soft !(ethertype inside {16'h0800, 16'h86DD, 16'h0806,   // IPv4, IPv6, ARP
+                                  16'h8100, 16'h88A8,              // VLAN, QinQ
+                                  16'h8847, 16'h8848,              // MPLS
+                                  16'h88F7, 16'h88CC, 16'h88E5});  // PTP, LLDP, MACsec
     }
 
     function new();
@@ -103,6 +109,20 @@ class vlan_header extends protocol_base;
             warnings.push_back("VLAN: vlan_id=0 (reserved)");
         if (vlan_id > 4094)
             errors.push_back($sformatf("VLAN: vlan_id=%0d > 4094", vlan_id));
+    endfunction
+
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("vlan_id", path);
+            if (__v != "") vlan_id = 12'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("pcp", path);
+            if (__v != "") pcp = 3'(aip_str::str_to_num(__v, __w));
+        end
+`endif
     endfunction
 
 endclass

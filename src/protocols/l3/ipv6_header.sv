@@ -20,6 +20,14 @@ class ipv6_header extends protocol_base;
         soft hop_limit inside {[1:255]};
         soft traffic_class == 0;
         soft flow_label == 0;
+        // next_header: exclude values that the parser maps to a known next-layer protocol.
+        // calc_fields() will override with the correct value when a next layer exists.
+        // When IPv6 is the last layer, the random value must not match a known
+        // next-header number that would cause the parser to expect another header.
+        // Note: 59 = No Next Header is safe and allowed.
+        soft !(next_header inside {8'd0, 8'd6, 8'd17, 8'd41,      // HBH, TCP, UDP, IPv6
+                                    8'd43, 8'd44, 8'd47, 8'd50,    // Routing, Fragment, GRE, ESP
+                                    8'd58, 8'd60, 8'd89, 8'd132}); // ICMPv6, Dest, OSPF, SCTP
     }
 
     function new();
@@ -102,6 +110,8 @@ class ipv6_header extends protocol_base;
             PROTO_IPV6_ROUTING:  next_header = IPV6_NH_ROUTING;
             PROTO_IPV6_FRAGMENT: next_header = IPV6_NH_FRAGMENT;
             PROTO_IPV6_DEST:     next_header = IPV6_NH_DEST;
+            PROTO_ESP:           next_header = IPV6_NH_ESP;
+            PROTO_RAW_PAYLOAD:   next_header = 8'd59;  // No Next Header (RFC 8200 Sec 4.7)
             default: ;
         endcase
 
@@ -153,6 +163,26 @@ class ipv6_header extends protocol_base;
                          next_header, hop_limit, payload_length);
     endfunction
 
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        // Skip src_addr and dst_addr — 128-bit, str_to_num only supports up to 64 bits
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("hop_limit", path);
+            if (__v != "") hop_limit = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("traffic_class", path);
+            if (__v != "") traffic_class = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("flow_label", path);
+            if (__v != "") flow_label = 20'(aip_str::str_to_num(__v, __w));
+        end
+`endif
+    endfunction
+
+    // RFC 8200 (IPv6)
     virtual function void verify(ref string errors[$], ref string warnings[$]);
         if (version != 6)
             errors.push_back($sformatf("IPv6: version=%0d, expected 6", version));
@@ -160,6 +190,10 @@ class ipv6_header extends protocol_base;
             warnings.push_back("IPv6: hop_limit=0 (packet will be dropped by routers)");
         if (payload_length == 0 && next_header != IPV6_NH_HBH)
             warnings.push_back($sformatf("IPv6: payload_length=0 with next_header=%0d (jumbogram?)", next_header));
+        // Validate next_header is a known IANA value
+        if (!(next_header inside {8'd0, 8'd6, 8'd17, 8'd41, 8'd43, 8'd44, 8'd47,
+                                   8'd50, 8'd58, 8'd59, 8'd60, 8'd89, 8'd132}))
+            warnings.push_back($sformatf("IPv6: next_header=%0d not a common IANA protocol number", next_header));
     endfunction
 
 endclass

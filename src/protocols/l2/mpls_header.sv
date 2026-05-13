@@ -86,6 +86,24 @@ class mpls_header extends protocol_base;
         return $sformatf("MPLS label:%0d tc:%0d s:%0d ttl:%0d", label, tc, s_bit, ttl);
     endfunction
 
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("label", path);
+            if (__v != "") label = 20'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("tc", path);
+            if (__v != "") tc = 3'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("ttl", path);
+            if (__v != "") ttl = 8'(aip_str::str_to_num(__v, __w));
+        end
+`endif
+    endfunction
+
     virtual function void verify(ref string errors[$], ref string warnings[$]);
         if (ttl == 0)
             warnings.push_back("MPLS: TTL=0 (packet will be dropped)");

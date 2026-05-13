@@ -38,6 +38,14 @@ class ipv4_header extends protocol_base;
         soft fragment_offset == 0;
         soft dscp == 0;
         soft ecn == 0;
+        // Protocol: exclude values that the parser maps to a known next-layer protocol.
+        // calc_fields() will override with the correct value (6/17/1/47/...) when
+        // a next layer exists. When IPv4 is the last layer (PROTO_RAW_PAYLOAD),
+        // the random value must not match a known IP protocol number that would
+        // cause the parser to expect another header.
+        soft !(protocol inside {8'd1, 8'd2, 8'd4, 8'd6, 8'd17,   // ICMP, IGMP, IP-in-IP, TCP, UDP
+                                 8'd41, 8'd47, 8'd50, 8'd58,       // IPv6, GRE, ESP, ICMPv6
+                                 8'd89, 8'd115, 8'd132});           // OSPF, L2TP, SCTP
     }
 
     constraint c_opt_default {
@@ -156,6 +164,8 @@ class ipv4_header extends protocol_base;
             PROTO_IPV6:     protocol = IP_PROTO_IPV6;
             PROTO_OSPF:     protocol = IP_PROTO_OSPF;
             PROTO_L2TP:     protocol = IP_PROTO_L2TP;
+            PROTO_ESP:      protocol = IP_PROTO_ESP;
+            PROTO_ICMPV6:   protocol = IP_PROTO_ICMPV6;
             default: ;
         endcase
 
@@ -397,9 +407,9 @@ class ipv4_header extends protocol_base;
         // TTL
         if (ttl == 0)
             warnings.push_back("IPv4: TTL=0 (packet will be dropped by routers)");
-        // Flags: reserved bit
+        // Flags: reserved bit (RFC 791: bit 0 of flags MUST be zero)
         if (flags[2] != 0)
-            warnings.push_back($sformatf("IPv4: flags reserved bit set (flags=%03b)", flags));
+            errors.push_back($sformatf("IPv4: flags reserved bit set (flags=%03b), MUST be 0 (RFC 791)", flags));
         // DF + MF conflict
         if (flags[1] && flags[0])
             warnings.push_back("IPv4: both DF and MF flags set (unusual)");
@@ -422,6 +432,32 @@ class ipv4_header extends protocol_base;
         // Source addr
         if (src_addr == 32'hFFFFFFFF)
             warnings.push_back("IPv4: src_addr is broadcast (255.255.255.255)");
+    endfunction
+
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("src_addr", path);
+            if (__v != "") src_addr = 32'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("dst_addr", path);
+            if (__v != "") dst_addr = 32'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("ttl", path);
+            if (__v != "") ttl = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("dscp", path);
+            if (__v != "") dscp = 6'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("identification", path);
+            if (__v != "") identification = 16'(aip_str::str_to_num(__v, __w));
+        end
+`endif
     endfunction
 
     static function void help();

@@ -302,6 +302,83 @@ pkt.add_layer(tcp);
 pkt.force_mode = 1;
 ```
 
+### 9. aip_core 集成 — TCL 运行时参数传递
+
+当与 [aip_core](https://github.com/Beihang-yuting/aip_core) 一起编译时，所有协议头支持通过 `load_params(path)` 从 TCL/plusargs 动态加载字段值。未设置的字段保持默认值或随机值。
+
+```systemverilog
+// 编译时加上 aip_core（自动启用 load_params）
+// vcs ... +incdir+<aip_core_path> aip_core_pkg.sv ...
+
+packet pkt = new();
+pkt.build_from_template(ETH_IPV4_TCP);
+pkt.load_params("eth_tx");   // seq 名作为 path 前缀
+pkt.do_pack();
+```
+
+TCL 中设置字段（`set_param` 或 plusargs）：
+
+```tcl
+# 路径规则：{seq_name}.{outer/inner}_{proto}.{field}
+set_param {
+    eth_tx.outer_eth.dst_mac     0xAABBCCDDEEFF
+    eth_tx.outer_eth.src_mac     0x112233445566
+    eth_tx.ipv4.src_addr         0xC0A80001
+    eth_tx.ipv4.dst_addr         0xC0A80002
+    eth_tx.ipv4.ttl              128
+    eth_tx.tcp.src_port          12345
+    eth_tx.tcp.dst_port          80
+    eth_tx.pkt_len               256
+}
+eth_tx count=10
+```
+
+VXLAN 隧道场景 — outer/inner 自动区分：
+
+```tcl
+set_param {
+    vxlan_tx.outer_eth.dst_mac       0xAAAAAAAAAAAA
+    vxlan_tx.outer_ipv4.src_addr     0x0A000001
+    vxlan_tx.outer_udp.dst_port      4789
+    vxlan_tx.vxlan.vni               0x123456
+    vxlan_tx.inner_eth.dst_mac       0xBBBBBBBBBBBB
+    vxlan_tx.inner_ipv4.dst_addr     0xC0A80064
+    vxlan_tx.tcp.dst_port            443
+}
+vxlan_tx count=5
+```
+
+**路径命名规则：**
+
+| 路径 | 说明 |
+|------|------|
+| `seq.outer_eth.dst_mac` | 外层以太网（第一个出现的 eth） |
+| `seq.inner_eth.dst_mac` | 内层以太网（第二个出现的 eth） |
+| `seq.tcp.dst_port` | 只出现一次的协议，也可省略 outer_ 前缀 |
+| `seq.vxlan.vni` | 隧道协议（只有一层） |
+| `seq.pkt_len` | 报文总长度 |
+| `seq.tmpl` | 模板名（动态切换，如 `ETH_IPV4_TCP`） |
+
+**支持的协议字段：**
+
+| 协议头 | 可配置字段 |
+|--------|-----------|
+| eth | `dst_mac`, `src_mac` |
+| vlan | `vlan_id`, `pcp` |
+| mpls | `label`, `tc`, `ttl` |
+| ipv4 | `src_addr`, `dst_addr`, `ttl`, `dscp`, `identification` |
+| ipv6 | `hop_limit`, `traffic_class`, `flow_label` |
+| tcp | `src_port`, `dst_port`, `seq_num`, `ack_num`, `flags`, `window_size` |
+| udp | `src_port`, `dst_port` |
+| icmp | `icmp_type`, `code` |
+| vxlan | `vni` |
+| gre | `key`, `protocol_type` |
+| geneve | `vni` |
+
+> 自动计算字段（ethertype、checksum、length、protocol 等）不在 load_params 范围内，由 `do_pack()` 中的 `calc_fields()` 自动处理，确保报文正确性。
+
+> 不带 aip_core 编译时，`load_params` 为空函数（`ifdef AIP_CMDLINE_SV` 保护），不影响原有功能。
+
 ## 报文模板列表
 
 ### 基本报文

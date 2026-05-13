@@ -14,6 +14,12 @@ class udp_header extends protocol_base;
     constraint c_default {
         soft src_port inside {[1024:65535]};
         soft dst_port inside {[1:65535]};
+        // Exclude well-known tunnel/overlay dst_ports so that when UDP is the
+        // last layer, the parser does not mistakenly expect a tunnel header.
+        // calc_fields() will override dst_port with the correct well-known value
+        // when a tunnel layer actually follows.
+        soft !(dst_port inside {16'd4789, 16'd6081, 16'd2152, 16'd2123,
+                                16'd4791, 16'd4790});
     }
 
     function new();
@@ -98,11 +104,32 @@ class udp_header extends protocol_base;
         return $sformatf("%0d -> %0d len:%0d", src_port, dst_port, length);
     endfunction
 
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("src_port", path);
+            if (__v != "") src_port = 16'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("dst_port", path);
+            if (__v != "") dst_port = 16'(aip_str::str_to_num(__v, __w));
+        end
+`endif
+    endfunction
+
+    // RFC 768 (UDP)
     virtual function void verify(ref string errors[$], ref string warnings[$]);
         if (length < 8)
             errors.push_back($sformatf("UDP: length=%0d < 8 (minimum UDP header size)", length));
         if (src_port == 0)
             warnings.push_back("UDP: src_port=0");
+        if (dst_port == 0)
+            warnings.push_back("UDP: dst_port=0");
+        // Checksum==0 means not computed (valid for IPv4, invalid for IPv6 per RFC 6935)
+        // We warn since it may indicate missing computation
+        if (checksum == 0)
+            warnings.push_back("UDP: checksum=0 (not computed — invalid over IPv6 per RFC 6935)");
     endfunction
 
 endclass

@@ -1885,6 +1885,116 @@ class packet;
         return s;
     endfunction
 
+    // =========================================================================
+    // load_params — load all header params from cmdline path
+    // =========================================================================
+    // load_params — 遍历 layer_stack 中的实际实例加载参数
+    // 路径规则：{p}.{proto_name}.{field} — 同类协议第二次出现用 inner_ 前缀
+    // 例：eth_tx.outer_eth.dst_mac, eth_tx.inner_ipv4.src_addr, eth_tx.tcp.dst_port
+    function void load_params(string p);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        string __v;
+        int proto_seen[protocol_type_e];
+
+        // 1. 模板参数（可选）：set_param eth_tx.tmpl ETH_IPV4_TCP
+        __v = aip_cmdline#(int)::get_cmdline_string("tmpl", p);
+        if (__v != "") begin
+            packet_template_e t = t.first();
+            string __lower_v = aip_str::lower(__v);
+            forever begin
+                if (aip_str::lower(t.name()) == __lower_v) begin
+                    build_from_template(t);
+                    break;
+                end
+                if (t == t.last()) break;
+                t = t.next();
+            end
+        end
+
+        // 2. 报文长度
+        __v = aip_cmdline#(int)::get_cmdline_string("pkt_len", p);
+        if (__v != "") pkt_len = int'(aip_str::str_to_num(__v, __w));
+
+        // 3. 遍历 layer_stack — 对实际使用的协议头实例调 load_params
+        foreach (layer_stack[i]) begin
+            string layer_path;
+            string proto_name;
+            protocol_type_e pt = layer_stack[i].proto_type;
+
+            // 协议名简写
+            case (pt)
+                PROTO_ETHERNET: proto_name = "eth";
+                PROTO_VLAN:     proto_name = "vlan";
+                PROTO_QINQ:     proto_name = "qinq";
+                PROTO_MPLS:     proto_name = "mpls";
+                PROTO_IPV4:     proto_name = "ipv4";
+                PROTO_IPV6:     proto_name = "ipv6";
+                PROTO_ARP:      proto_name = "arp";
+                PROTO_TCP:      proto_name = "tcp";
+                PROTO_UDP:      proto_name = "udp";
+                PROTO_ICMP:     proto_name = "icmp";
+                PROTO_ICMPV6:   proto_name = "icmpv6";
+                PROTO_SCTP:     proto_name = "sctp";
+                PROTO_VXLAN:    proto_name = "vxlan";
+                PROTO_GRE:      proto_name = "gre";
+                PROTO_GENEVE:   proto_name = "geneve";
+                PROTO_GTP_U:    proto_name = "gtp";
+                PROTO_ERSPAN_II:  proto_name = "erspan_ii";
+                PROTO_ERSPAN_III: proto_name = "erspan_iii";
+                PROTO_VXLAN_GPE:  proto_name = "vxlan_gpe";
+                PROTO_ESP:      proto_name = "esp";
+                PROTO_ROCEV2:   proto_name = "rocev2";
+                PROTO_IWARP:    proto_name = "iwarp";
+                PROTO_NVME_TCP: proto_name = "nvme_tcp";
+                PROTO_ISCSI:    proto_name = "iscsi";
+                PROTO_PTP:      proto_name = "ptp";
+                default:        proto_name = pt.name();
+            endcase
+
+            // outer/inner 区分：第一次出现 = outer_，第二次 = inner_
+            // 只出现一次的协议（tcp/vxlan 等）不加前缀
+            if (!proto_seen.exists(pt)) begin
+                proto_seen[pt] = 1;
+                layer_path = {p, ".outer_", proto_name};
+            end else begin
+                layer_path = {p, ".inner_", proto_name};
+            end
+
+            layer_stack[i].load_params(layer_path);
+        end
+
+        // 4. 对只出现一次的协议，也支持不带 outer_ 前缀的简写路径
+        //    例：eth_tx.tcp.dst_port 等价于 eth_tx.outer_tcp.dst_port
+        foreach (layer_stack[i]) begin
+            protocol_type_e pt = layer_stack[i].proto_type;
+            if (proto_seen.exists(pt) && proto_seen[pt] == 1) begin
+                string proto_name;
+                case (pt)
+                    PROTO_ETHERNET: proto_name = "eth";
+                    PROTO_VLAN:     proto_name = "vlan";
+                    PROTO_IPV4:     proto_name = "ipv4";
+                    PROTO_IPV6:     proto_name = "ipv6";
+                    PROTO_TCP:      proto_name = "tcp";
+                    PROTO_UDP:      proto_name = "udp";
+                    PROTO_ICMP:     proto_name = "icmp";
+                    PROTO_SCTP:     proto_name = "sctp";
+                    PROTO_VXLAN:    proto_name = "vxlan";
+                    PROTO_GRE:      proto_name = "gre";
+                    PROTO_GENEVE:   proto_name = "geneve";
+                    PROTO_GTP_U:    proto_name = "gtp";
+                    PROTO_ROCEV2:   proto_name = "rocev2";
+                    PROTO_ARP:      proto_name = "arp";
+                    PROTO_PTP:      proto_name = "ptp";
+                    default:        proto_name = "";
+                endcase
+                if (proto_name != "")
+                    layer_stack[i].load_params({p, ".", proto_name});
+            end
+        end
+`endif
+    endfunction
+
 endclass
 
 `endif // PACKET_SV

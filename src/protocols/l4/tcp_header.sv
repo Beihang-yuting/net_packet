@@ -38,6 +38,10 @@ class tcp_header extends protocol_base;
         soft dst_port inside {[1:65535]};
         soft reserved == 0;
         soft window_size == 16'hFFFF;
+        // Exclude well-known application dst_ports so that when TCP is the
+        // last layer, the parser does not mistakenly expect an upper-layer header.
+        // calc_fields() will set the correct port when an app layer follows.
+        soft !(dst_port inside {16'd4420, 16'd3260, 16'd5044});
     }
 
     constraint c_opt_default {
@@ -411,6 +415,36 @@ class tcp_header extends protocol_base;
         foreach (tmp[i]) opts.push_back(tmp[i]);
         // Total: 4+2+1+1+10+1+3 = 22 → pad to 24
         return build_options(opts);
+    endfunction
+
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("src_port", path);
+            if (__v != "") src_port = 16'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("dst_port", path);
+            if (__v != "") dst_port = 16'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("seq_num", path);
+            if (__v != "") seq_num = 32'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("ack_num", path);
+            if (__v != "") ack_num = 32'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("flags", path);
+            if (__v != "") flags = 9'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("window_size", path);
+            if (__v != "") window_size = 16'(aip_str::str_to_num(__v, __w));
+        end
+`endif
     endfunction
 
     // help — print TCP options usage guide

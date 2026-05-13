@@ -24,6 +24,11 @@ class gre_header extends protocol_base;
         soft reserved0     == 9'h0;
         soft version       == 3'h0;
         soft reserved1     == 16'h0;
+        // protocol_type: exclude values that the parser maps to a known next-layer.
+        // calc_fields() overrides with the correct ethertype when a next layer exists.
+        soft !(protocol_type inside {16'h0800, 16'h86DD,           // IPv4, IPv6
+                                      16'h6558,                     // Transparent Ethernet Bridging
+                                      16'h88BE, 16'h22EB});        // ERSPAN II, ERSPAN III
     }
 
     function new();
@@ -156,6 +161,20 @@ class gre_header extends protocol_base;
 
     virtual function string to_brief();
         return $sformatf("GRE proto:0x%04x c:%0b k:%0b s:%0b", protocol_type, c_flag, k_flag, s_flag);
+    endfunction
+
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("key", path);
+            if (__v != "") key = 32'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("protocol_type", path);
+            if (__v != "") protocol_type = 16'(aip_str::str_to_num(__v, __w));
+        end
+`endif
     endfunction
 
     // help — print GRE options usage guide

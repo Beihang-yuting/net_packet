@@ -32,6 +32,9 @@ virtual class protocol_base;
             $display("%s", to_string());
     endfunction
 
+    virtual function void load_params(string path);
+    endfunction
+
 endclass
 
 `endif // PROTOCOL_BASE_SV

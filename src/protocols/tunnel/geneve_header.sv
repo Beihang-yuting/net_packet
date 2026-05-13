@@ -36,6 +36,9 @@ class geneve_header extends protocol_base;
         soft reserved0 == 6'h0;
         soft reserved1 == 8'h0;
         soft opt_len   == 6'h0;
+        // protocol_type: exclude values that the parser maps to a known next-layer.
+        // calc_fields() overrides with the correct value when a next layer exists.
+        soft !(protocol_type inside {16'h0800, 16'h86DD, 16'h6558}); // IPv4, IPv6, Ethernet
     }
 
     constraint c_opt_ctrl {
@@ -232,6 +235,16 @@ class geneve_header extends protocol_base;
         while (result.size() % 4 != 0)
             result.push_back(8'd0);
         return result;
+    endfunction
+
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("vni", path);
+            if (__v != "") vni = 24'(aip_str::str_to_num(__v, __w));
+        end
+`endif
     endfunction
 
     // help — print Geneve options usage guide

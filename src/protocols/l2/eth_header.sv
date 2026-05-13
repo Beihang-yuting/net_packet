@@ -13,6 +13,16 @@ class eth_header extends protocol_base;
     constraint c_default {
         soft dst_mac inside {[0:48'hFFFFFFFFFFFF]};
         soft src_mac inside {[0:48'hFFFFFFFFFFFF]};
+        // Ethertype: exclude values that the parser maps to a known next-layer protocol.
+        // calc_fields() will override with the correct value when a next layer exists,
+        // but when Ethernet is the last layer the random value must not accidentally
+        // match a known protocol ethertype — otherwise the parser will try to decode
+        // payload bytes as a protocol header.
+        soft !(ethertype inside {16'h0800, 16'h86DD, 16'h0806,   // IPv4, IPv6, ARP
+                                  16'h8100, 16'h88A8,              // VLAN, QinQ
+                                  16'h8847, 16'h8848,              // MPLS Uni/Multi
+                                  16'h88F7, 16'h88CC, 16'h8809,   // PTP, LLDP, LACP/STP
+                                  16'h88E5, 16'h888E, 16'h8808}); // MACsec, EAP, MAC_Control
     }
 
     function new();
@@ -109,6 +119,20 @@ class eth_header extends protocol_base;
         // Unknown ethertype
         if (ethertype < 16'h0600 && ethertype > 16'h05DC)
             warnings.push_back($sformatf("Ethernet: ethertype=0x%04x in undefined range", ethertype));
+    endfunction
+
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("dst_mac", path);
+            if (__v != "") dst_mac = 48'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("src_mac", path);
+            if (__v != "") src_mac = 48'(aip_str::str_to_num(__v, __w));
+        end
+`endif
     endfunction
 
 endclass
