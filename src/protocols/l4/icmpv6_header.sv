@@ -110,6 +110,28 @@ class icmpv6_header extends protocol_base;
         end
     endfunction
 
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("icmp_type", path);
+            if (__v != "") icmp_type = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("icmp_code", path);
+            if (__v != "") icmp_code = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("identifier", path);
+            if (__v != "") identifier = 16'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("sequence_num", path);
+            if (__v != "") sequence_num = 16'(aip_str::str_to_num(__v, __w));
+        end
+`endif
+    endfunction
+
 endclass
 
 `endif // ICMPV6_HEADER_SV

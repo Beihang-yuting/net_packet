@@ -31,6 +31,8 @@ class iscsi_header extends protocol_base;
     constraint c_default {
         soft reserved_bit == 1'b0;
         soft reserved1    == 16'h0000;
+        // RFC 7143 Section 11.1: valid opcode ranges
+        soft opcode inside {[6'h00:6'h06], [6'h20:6'h26]};
     }
 
     function new();
@@ -161,6 +163,52 @@ class iscsi_header extends protocol_base;
     virtual function string to_brief();
         return $sformatf("iSCSI op:0x%02x itt:0x%08x lun:0x%016x dsl:%0d",
                          opcode, initiator_task_tag, lun, data_segment_len);
+    endfunction
+
+    // RFC 7143 (iSCSI)
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        // Reserved bit must be 0 (RFC 7143 Section 11.2.1)
+        if (reserved_bit != 0)
+            errors.push_back("iSCSI: reserved bit is set (must be 0)");
+        // Reserved field must be 0
+        if (reserved1 != 0)
+            warnings.push_back($sformatf("iSCSI: reserved1=0x%04x, expected 0", reserved1));
+        // Opcode range: initiator opcodes 0x00-0x06, target opcodes 0x20-0x26 (RFC 7143 Sec 11.1)
+        if (!(opcode inside {[6'h00:6'h06], [6'h20:6'h26]}))
+            warnings.push_back($sformatf("iSCSI: opcode=0x%02x not in standard range", opcode));
+        // Data segment length should be 4-byte aligned for most PDUs
+        if (data_segment_len % 4 != 0)
+            warnings.push_back($sformatf("iSCSI: data_segment_len=%0d not 4-byte aligned", data_segment_len));
+    endfunction
+
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("opcode", path);
+            if (__v != "") opcode = 6'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("flags", path);
+            if (__v != "") flags = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("total_ahs_len", path);
+            if (__v != "") total_ahs_len = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("data_segment_len", path);
+            if (__v != "") data_segment_len = 24'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("lun", path);
+            if (__v != "") lun = 64'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("initiator_task_tag", path);
+            if (__v != "") initiator_task_tag = 32'(aip_str::str_to_num(__v, __w));
+        end
+`endif
     endfunction
 
 endclass

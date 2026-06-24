@@ -616,6 +616,107 @@ class rocev2_bth extends protocol_base;
             warnings.push_back("RoCEv2 BTH: dest_qp=0");
     endfunction
 
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("opcode", path);
+            if (__v != "") begin
+                bit [7:0] __t = 8'(aip_str::str_to_num(__v, __w));
+                opcode = rocev2_opcode_e'(__t);
+            end
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("se", path);
+            if (__v != "") se = 1'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("mig_req", path);
+            if (__v != "") mig_req = 1'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("pad_count", path);
+            if (__v != "") pad_count = 2'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("tver", path);
+            if (__v != "") tver = 4'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("pkey", path);
+            if (__v != "") pkey = 16'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("dest_qp", path);
+            if (__v != "") dest_qp = 24'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("ack_req", path);
+            if (__v != "") ack_req = 1'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("psn", path);
+            if (__v != "") psn = 24'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("reth_va", path);
+            if (__v != "") reth_va = 64'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("reth_r_key", path);
+            if (__v != "") reth_r_key = 32'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("reth_dma_len", path);
+            if (__v != "") reth_dma_len = 32'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("aeth_syndrome", path);
+            if (__v != "") aeth_syndrome = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("aeth_msn", path);
+            if (__v != "") aeth_msn = 24'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("imm_data", path);
+            if (__v != "") imm_data = 32'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("atomic_va", path);
+            if (__v != "") atomic_va = 64'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("atomic_r_key", path);
+            if (__v != "") atomic_r_key = 32'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("atomic_swap_add", path);
+            if (__v != "") atomic_swap_add = 64'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("atomic_compare", path);
+            if (__v != "") atomic_compare = 64'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("atomic_orig_data", path);
+            if (__v != "") atomic_orig_data = 64'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("ieth_r_key", path);
+            if (__v != "") ieth_r_key = 32'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("deth_q_key", path);
+            if (__v != "") deth_q_key = 32'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("deth_src_qp", path);
+            if (__v != "") deth_src_qp = 24'(aip_str::str_to_num(__v, __w));
+        end
+`endif
+    endfunction
+
 endclass
 
 `endif // ROCEV2_HEADER_SV

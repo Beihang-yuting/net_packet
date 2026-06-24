@@ -90,11 +90,34 @@ class sctp_header extends protocol_base;
                          src_port, dst_port, verification_tag);
     endfunction
 
+    // RFC 9260 (SCTP)
     virtual function void verify(ref string errors[$], ref string warnings[$]);
         if (src_port == 0)
             warnings.push_back("SCTP: src_port=0");
         if (dst_port == 0)
             warnings.push_back("SCTP: dst_port=0");
+        // INIT chunk must have verification_tag==0 (RFC 9260 Section 8.1)
+        // For general check: tag==0 on non-INIT is suspicious
+        if (verification_tag == 0)
+            warnings.push_back("SCTP: verification_tag=0 (only valid in INIT chunk)");
+    endfunction
+
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("src_port", path);
+            if (__v != "") src_port = 16'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("dst_port", path);
+            if (__v != "") dst_port = 16'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("verification_tag", path);
+            if (__v != "") verification_tag = 32'(aip_str::str_to_num(__v, __w));
+        end
+`endif
     endfunction
 
 endclass

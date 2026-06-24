@@ -94,6 +94,20 @@ class esp_header extends protocol_base;
             warnings.push_back("ESP: SPI=0 (reserved, implementation specific)");
     endfunction
 
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("spi", path);
+            if (__v != "") spi = 32'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("sequence_number", path);
+            if (__v != "") sequence_number = 32'(aip_str::str_to_num(__v, __w));
+        end
+`endif
+    endfunction
+
 endclass
 
 `endif // ESP_HEADER_SV

@@ -126,6 +126,40 @@ class erspan_ii_header extends protocol_base;
             errors.push_back($sformatf("ERSPAN-II: version=%0d, expected 1", version));
     endfunction
 
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("version", path);
+            if (__v != "") version = 4'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("vlan", path);
+            if (__v != "") vlan = 12'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("cos", path);
+            if (__v != "") cos = 3'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("en", path);
+            if (__v != "") en = 2'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("truncated", path);
+            if (__v != "") truncated = 1'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("session_id", path);
+            if (__v != "") session_id = 10'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("index", path);
+            if (__v != "") index = 20'(aip_str::str_to_num(__v, __w));
+        end
+`endif
+    endfunction
+
 endclass
 
 // ============================================================
@@ -281,6 +315,68 @@ class erspan_iii_header extends protocol_base;
     virtual function void verify(ref string errors[$], ref string warnings[$]);
         if (version != 2)
             errors.push_back($sformatf("ERSPAN-III: version=%0d, expected 2", version));
+    endfunction
+
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("version", path);
+            if (__v != "") version = 4'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("vlan", path);
+            if (__v != "") vlan = 12'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("cos", path);
+            if (__v != "") cos = 3'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("bso", path);
+            if (__v != "") bso = 2'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("truncated", path);
+            if (__v != "") truncated = 1'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("session_id", path);
+            if (__v != "") session_id = 10'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("timestamp", path);
+            if (__v != "") timestamp = 32'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("sgt", path);
+            if (__v != "") sgt = 16'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("p_flag", path);
+            if (__v != "") p_flag = 1'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("ft", path);
+            if (__v != "") ft = 6'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("hw_id", path);
+            if (__v != "") hw_id = 6'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("direction", path);
+            if (__v != "") direction = 1'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("gra", path);
+            if (__v != "") gra = 2'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("o_flag", path);
+            if (__v != "") o_flag = 1'(aip_str::str_to_num(__v, __w));
+        end
+`endif
     endfunction
 
 endclass

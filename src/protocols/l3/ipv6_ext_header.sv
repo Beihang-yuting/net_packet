@@ -16,6 +16,8 @@ function automatic bit [7:0] proto_to_ipv6_nh(protocol_type_e proto);
         PROTO_IPV6_DEST:     return 8'd60;
         PROTO_GRE:           return 8'd47;
         PROTO_SCTP:          return 8'd132;
+        PROTO_ESP:           return 8'd50;
+        PROTO_RAW_PAYLOAD:   return 8'd59; // No Next Header
         default:             return 8'd59; // No Next Header
     endcase
 endfunction
@@ -178,6 +180,36 @@ class ipv6_hbh_header extends protocol_base;
                          next_header, hdr_ext_len, get_header_length());
     endfunction
 
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("next_header", path);
+            if (__v != "") next_header = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("hdr_ext_len", path);
+            if (__v != "") hdr_ext_len = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("opt_router_alert_en", path);
+            if (__v != "") opt_router_alert_en = 1'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("opt_router_alert_val", path);
+            if (__v != "") opt_router_alert_val = 16'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("opt_jumbo_en", path);
+            if (__v != "") opt_jumbo_en = 1'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("opt_jumbo_len", path);
+            if (__v != "") opt_jumbo_len = 32'(aip_str::str_to_num(__v, __w));
+        end
+`endif
+    endfunction
+
 endclass
 
 // =============================================================================
@@ -306,6 +338,28 @@ class ipv6_routing_header extends protocol_base;
                          next_header, routing_type, segments_left, get_header_length());
     endfunction
 
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("next_header", path);
+            if (__v != "") next_header = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("hdr_ext_len", path);
+            if (__v != "") hdr_ext_len = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("routing_type", path);
+            if (__v != "") routing_type = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("segments_left", path);
+            if (__v != "") segments_left = 8'(aip_str::str_to_num(__v, __w));
+        end
+`endif
+    endfunction
+
 endclass
 
 // =============================================================================
@@ -324,6 +378,12 @@ class ipv6_fragment_header extends protocol_base;
     rand bit [1:0]  reserved2;
     rand bit        m_flag;
     rand bit [31:0] identification;
+
+    // RFC 8200 Section 4.5: reserved fields MUST be zero
+    constraint c_default {
+        soft reserved1 == 8'd0;
+        soft reserved2 == 2'd0;
+    }
 
     function new();
         proto_type      = PROTO_IPV6_FRAGMENT;
@@ -415,6 +475,38 @@ class ipv6_fragment_header extends protocol_base;
     virtual function string to_brief();
         return $sformatf("Fragment nh:%0d off:%0d M:%0b id:0x%08x",
                          next_header, fragment_offset, m_flag, identification);
+    endfunction
+
+    // RFC 8200 Section 4.5
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        if (reserved1 != 0)
+            warnings.push_back($sformatf("IPv6 Fragment: reserved1=0x%02x, MUST be 0 (RFC 8200)", reserved1));
+        if (reserved2 != 0)
+            warnings.push_back($sformatf("IPv6 Fragment: reserved2=%0d, MUST be 0 (RFC 8200)", reserved2));
+        if (fragment_offset == 0 && m_flag == 0)
+            warnings.push_back("IPv6 Fragment: offset=0 and M=0 (unfragmented, fragment header unnecessary)");
+    endfunction
+
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("next_header", path);
+            if (__v != "") next_header = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("fragment_offset", path);
+            if (__v != "") fragment_offset = 13'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("m_flag", path);
+            if (__v != "") m_flag = 1'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("identification", path);
+            if (__v != "") identification = 32'(aip_str::str_to_num(__v, __w));
+        end
+`endif
     endfunction
 
 endclass
@@ -558,6 +650,32 @@ class ipv6_dest_header extends protocol_base;
     virtual function string to_brief();
         return $sformatf("Dest nh:%0d ext_len:%0d total:%0dB",
                          next_header, hdr_ext_len, get_header_length());
+    endfunction
+
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("next_header", path);
+            if (__v != "") next_header = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("hdr_ext_len", path);
+            if (__v != "") hdr_ext_len = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("opt_custom_en", path);
+            if (__v != "") opt_custom_en = 1'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("opt_custom_type", path);
+            if (__v != "") opt_custom_type = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("opt_custom_data", path);
+            if (__v != "") opt_custom_data = 32'(aip_str::str_to_num(__v, __w));
+        end
+`endif
     endfunction
 
 endclass

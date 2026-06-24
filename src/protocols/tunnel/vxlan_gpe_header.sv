@@ -31,6 +31,9 @@ class vxlan_gpe_header extends protocol_base;
         soft reserved1 == 8'h0;
         soft reserved2 == 8'h0;
         soft reserved3 == 8'h0;
+        // next_protocol: exclude values that the parser maps to a known next-layer.
+        // calc_fields() overrides with the correct value when a next layer exists.
+        soft !(next_protocol inside {8'd1, 8'd2, 8'd3, 8'd5}); // IPv4, IPv6, Ethernet, MPLS
     }
 
     function new();
@@ -125,6 +128,24 @@ class vxlan_gpe_header extends protocol_base;
             warnings.push_back($sformatf("VXLAN-GPE: next_protocol=%0d out of known range (1-5)", next_protocol));
         if (vni == 0)
             warnings.push_back("VXLAN-GPE: VNI=0");
+    endfunction
+
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("flags", path);
+            if (__v != "") flags = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("next_protocol", path);
+            if (__v != "") next_protocol = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("vni", path);
+            if (__v != "") vni = 24'(aip_str::str_to_num(__v, __w));
+        end
+`endif
     endfunction
 
 endclass

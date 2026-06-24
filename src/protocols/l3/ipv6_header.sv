@@ -166,7 +166,21 @@ class ipv6_header extends protocol_base;
     virtual function void load_params(string path);
 `ifdef AIP_CMDLINE_SV
         int __w;
-        // Skip src_addr and dst_addr — 128-bit, str_to_num only supports up to 64 bits
+        // src_addr/dst_addr 128-bit: str_to_num 仅 64bit, 用 packet_utils::parse_ipv6
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("src_addr", path);
+            if (__v != "") begin
+                bit __ok; bit [127:0] __a = packet_utils::parse_ipv6(__v, __ok);
+                if (__ok) src_addr = __a;
+            end
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("dst_addr", path);
+            if (__v != "") begin
+                bit __ok; bit [127:0] __a = packet_utils::parse_ipv6(__v, __ok);
+                if (__ok) dst_addr = __a;
+            end
+        end
         begin
             string __v = aip_cmdline#(int)::get_cmdline_string("hop_limit", path);
             if (__v != "") hop_limit = 8'(aip_str::str_to_num(__v, __w));

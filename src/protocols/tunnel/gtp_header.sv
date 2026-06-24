@@ -287,6 +287,40 @@ class gtp_u_header extends protocol_base;
         $display("============================================================================");
     endfunction
 
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("version", path);
+            if (__v != "") version = 3'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("message_type", path);
+            if (__v != "") message_type = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("teid", path);
+            if (__v != "") teid = 32'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("sequence_number", path);
+            if (__v != "") sequence_number = 16'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("n_pdu_number", path);
+            if (__v != "") n_pdu_number = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("next_ext_hdr_type", path);
+            if (__v != "") next_ext_hdr_type = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("ext_hdr_type", path);
+            if (__v != "") ext_hdr_type = 8'(aip_str::str_to_num(__v, __w));
+        end
+`endif
+    endfunction
+
 endclass
 
 `endif // GTP_HEADER_SV

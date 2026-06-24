@@ -188,6 +188,75 @@ class iwarp_header extends protocol_base;
                          rdmap_opcode, queue_number, msn, sink_stag);
     endfunction
 
+    // RFC 5040 (DDP), RFC 5041 (MPA), RFC 5042 (RDMAP)
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        // DDP version must be 1 (RFC 5040 Section 4)
+        if (ddp_version != 1)
+            errors.push_back($sformatf("iWARP: DDP version=%0d, expected 1 (RFC 5040)", ddp_version));
+        // RDMAP version must be 1 (RFC 5042 Section 4)
+        if (rdmap_version != 1)
+            errors.push_back($sformatf("iWARP: RDMAP version=%0d, expected 1 (RFC 5042)", rdmap_version));
+        // MPA length consistency: should be >= 22 (DDP 14 + RDMAP 8)
+        if (mpa_length < 22)
+            errors.push_back($sformatf("iWARP: MPA length=%0d < 22 (minimum DDP+RDMAP)", mpa_length));
+        // Reserved fields must be zero
+        if (mpa_reserved != 0)
+            warnings.push_back($sformatf("iWARP: MPA reserved=0x%04x, expected 0", mpa_reserved));
+        if (ddp_reserved != 0)
+            warnings.push_back($sformatf("iWARP: DDP reserved=0x%02x, expected 0", ddp_reserved));
+        if (rdmap_reserved != 0)
+            warnings.push_back($sformatf("iWARP: RDMAP reserved=0x%04x, expected 0", rdmap_reserved));
+        // RDMAP opcode range (RFC 5042 Section 4): valid opcodes 0-4
+        if (rdmap_opcode > 4)
+            warnings.push_back($sformatf("iWARP: RDMAP opcode=0x%01x > 4 (unknown)", rdmap_opcode));
+    endfunction
+
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("mpa_length", path);
+            if (__v != "") mpa_length = 16'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("tagged_bit", path);
+            if (__v != "") tagged_bit = 1'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("last", path);
+            if (__v != "") last = 1'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("ddp_version", path);
+            if (__v != "") ddp_version = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("queue_number", path);
+            if (__v != "") queue_number = 16'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("msn", path);
+            if (__v != "") msn = 32'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("msg_offset", path);
+            if (__v != "") msg_offset = 48'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("rdmap_version", path);
+            if (__v != "") rdmap_version = 4'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("rdmap_opcode", path);
+            if (__v != "") rdmap_opcode = 4'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("sink_stag", path);
+            if (__v != "") sink_stag = 32'(aip_str::str_to_num(__v, __w));
+        end
+`endif
+    endfunction
+
 endclass
 
 `endif // IWARP_HEADER_SV

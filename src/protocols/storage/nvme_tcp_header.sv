@@ -16,6 +16,8 @@ class nvme_tcp_header extends protocol_base;
     rand bit [31:0] plen;      // Entire PDU length
 
     constraint c_default {
+        soft pdu_type inside {8'h00, 8'h01, 8'h02, 8'h03,  // ICReq, ICResp, H2CTermReq, C2HTermReq
+                              8'h04, 8'h05, 8'h06, 8'h07};  // CapsuleCmd, CapsuleResp, H2CData, C2HData
         soft flags == 8'h00;
         soft hlen  == 8'd8;
         soft pdo   == 8'h00;
@@ -96,6 +98,44 @@ class nvme_tcp_header extends protocol_base;
     virtual function string to_brief();
         return $sformatf("NVMe-TCP pdu_type:0x%02x flags:0x%02x hlen:%0d plen:%0d",
                          pdu_type, flags, hlen, plen);
+    endfunction
+
+    // NVMe-oF TCP Transport Specification 1.0/1.1
+    virtual function void verify(ref string errors[$], ref string warnings[$]);
+        // PDU type must be a valid NVMe-TCP PDU type (0x00-0x07)
+        if (!(pdu_type inside {8'h00, 8'h01, 8'h02, 8'h03, 8'h04, 8'h05, 8'h06, 8'h07}))
+            errors.push_back($sformatf("NVMe-TCP: pdu_type=0x%02x is not a valid PDU type", pdu_type));
+        // hlen must be >= 8 (minimum common header size)
+        if (hlen < 8)
+            errors.push_back($sformatf("NVMe-TCP: hlen=%0d < 8 (minimum header)", hlen));
+        // plen must be >= hlen
+        if (plen < {24'd0, hlen})
+            errors.push_back($sformatf("NVMe-TCP: plen=%0d < hlen=%0d", plen, hlen));
+        // PDO (PDU Data Offset): if non-zero, must be 4-byte aligned
+        if (pdo != 0 && pdo % 4 != 0)
+            warnings.push_back($sformatf("NVMe-TCP: PDO=%0d not 4-byte aligned", pdo));
+    endfunction
+
+    virtual function void load_params(string path);
+`ifdef AIP_CMDLINE_SV
+        int __w;
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("pdu_type", path);
+            if (__v != "") pdu_type = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("flags", path);
+            if (__v != "") flags = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("hlen", path);
+            if (__v != "") hlen = 8'(aip_str::str_to_num(__v, __w));
+        end
+        begin
+            string __v = aip_cmdline#(int)::get_cmdline_string("pdo", path);
+            if (__v != "") pdo = 8'(aip_str::str_to_num(__v, __w));
+        end
+`endif
     endfunction
 
 endclass

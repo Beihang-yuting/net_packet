@@ -66,8 +66,9 @@ class protocol_graph;
         register_transition(PROTO_VLAN, PROTO_VLAN);
         register_transition(PROTO_VLAN, PROTO_MPLS);
 
-        // QinQ -> {VLAN, IPv4, IPv6}
+        // QinQ -> {VLAN, QinQ, IPv4, IPv6}
         register_transition(PROTO_QINQ, PROTO_VLAN);
+        register_transition(PROTO_QINQ, PROTO_QINQ);  // multi-layer S-VLAN stacking
         register_transition(PROTO_QINQ, PROTO_IPV4);
         register_transition(PROTO_QINQ, PROTO_IPV6);
 
