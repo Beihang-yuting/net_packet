@@ -366,14 +366,35 @@ vxlan_tx count=5
 | eth | `dst_mac`, `src_mac` |
 | vlan | `vlan_id`, `pcp` |
 | mpls | `label`, `tc`, `ttl` |
+| arp | `opcode`, `hw_type`, `proto_type_field`, `hw_len`, `proto_len`, `sender_mac`, `sender_ip`, `target_mac`, `target_ip` |
 | ipv4 | `src_addr`, `dst_addr`, `ttl`, `dscp`, `identification` |
-| ipv6 | `hop_limit`, `traffic_class`, `flow_label` |
+| ipv6 | `src_addr`, `dst_addr`（128bit，见下「IPv6 地址格式」）, `hop_limit`, `traffic_class`, `flow_label` |
+| ipv6_ext (Hop-by-Hop) | `next_header`, `hdr_ext_len`, `opt_router_alert_en`/`opt_router_alert_val`, `opt_jumbo_en`/`opt_jumbo_len` |
+| ipv6_ext (Routing) | `next_header`, `hdr_ext_len`, `routing_type`, `segments_left` |
+| ipv6_ext (Fragment) | `next_header`, `fragment_offset`, `m_flag`, `identification` |
+| ipv6_ext (Destination) | `next_header`, `hdr_ext_len`, `opt_custom_en`/`opt_custom_type`/`opt_custom_data` |
 | tcp | `src_port`, `dst_port`, `seq_num`, `ack_num`, `flags`, `window_size` |
 | udp | `src_port`, `dst_port` |
+| sctp | `src_port`, `dst_port`, `verification_tag` |
 | icmp | `icmp_type`, `code` |
+| icmpv6 | `icmp_type`, `icmp_code`, `identifier`, `sequence_num` |
 | vxlan | `vni` |
+| vxlan_gpe | `flags`, `next_protocol`, `vni` |
 | gre | `key`, `protocol_type` |
 | geneve | `vni` |
+| gtp | `version`, `message_type`, `teid`, `sequence_number`, `n_pdu_number`, `next_ext_hdr_type`, `ext_hdr_type` |
+| esp | `spi`, `sequence_number` |
+| erspan (Type II) | `version`, `vlan`, `cos`, `en`, `truncated`, `session_id`, `index` |
+| erspan (Type III) | `version`, `vlan`, `cos`, `bso`, `truncated`, `session_id`, `timestamp`, `sgt`, `p_flag`, `ft`, `hw_id`, `direction`, `gra`, `o_flag` |
+| nvme_tcp | `pdu_type`, `flags`, `hlen`, `pdo` |
+| iscsi | `opcode`, `flags`, `total_ahs_len`, `data_segment_len`, `lun`（64bit）, `initiator_task_tag` |
+| iwarp | `mpa_length`, `tagged_bit`, `last`, `ddp_version`, `queue_number`, `msn`, `msg_offset`（48bit）, `rdmap_version`, `rdmap_opcode`, `sink_stag` |
+| rocev2 | `opcode`（枚举数值）, `se`, `mig_req`, `pad_count`, `tver`, `pkey`, `dest_qp`, `ack_req`, `psn`, `reth_va`/`reth_r_key`/`reth_dma_len`, `aeth_syndrome`/`aeth_msn`, `imm_data`, `atomic_va`/`atomic_r_key`/`atomic_swap_add`/`atomic_compare`/`atomic_orig_data`, `ieth_r_key`, `deth_q_key`/`deth_src_qp` |
+| ptp | `transport_specific`, `message_type`, `version_ptp`, `domain_number`, `flag_field`, `correction_field`（64bit）, `clock_identity`（64bit）, `port_number`, `sequence_id`, `control_field`, `log_message_interval` |
+
+> **IPv6 地址格式**：`src_addr`/`dst_addr` 经 `packet_utils::parse_ipv6` 解析，支持冒号写法（`2001:db8::1`、`::1`、`::`、`fe80::abcd`）或纯十六进制（`0x2001...`，≤32 hex）。非法格式保持默认值。
+>
+> **宽字段满宽**：MAC 48bit、iSCSI `lun` / PTP `correction_field`·`clock_identity` / RoCEv2 64bit 字段、IPv6 128bit 地址均全宽设置无截断（真机 VCS Q-2020 验证，见 `test/test_load_params_wide.sv`）。
 
 > 自动计算字段（ethertype、checksum、length、protocol 等）不在 load_params 范围内，由 `do_pack()` 中的 `calc_fields()` 自动处理，确保报文正确性。
 
