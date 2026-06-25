@@ -392,6 +392,17 @@ vxlan_tx count=5
 | iwarp | `mpa_length`, `tagged_bit`, `last`, `ddp_version`, `queue_number`, `msn`, `msg_offset`（48bit）, `rdmap_version`, `rdmap_opcode`, `sink_stag` |
 | rocev2 | `opcode`（枚举数值）, `se`, `mig_req`, `pad_count`, `tver`, `pkey`, `dest_qp`, `ack_req`, `psn`, `reth_va`/`reth_r_key`/`reth_dma_len`, `aeth_syndrome`/`aeth_msn`, `imm_data`, `atomic_va`/`atomic_r_key`/`atomic_swap_add`/`atomic_compare`/`atomic_orig_data`, `ieth_r_key`, `deth_q_key`/`deth_src_qp` |
 | ptp | `transport_specific`, `message_type`, `version_ptp`, `domain_number`, `flag_field`, `correction_field`（64bit）, `clock_identity`（64bit）, `port_number`, `sequence_id`, `control_field`, `log_message_interval` |
+| lldp | `chassis_id`（48bit）, `port_id`（48bit）, `ttl` |
+| lacp | `actor_system`（48bit）, `actor_key`, `actor_port`, `partner_system`（48bit） |
+| stp | `root_id`（64bit）, `bridge_id`（64bit）, `port_id`, `flags` |
+| mac_control | `opcode`, `pause_time` |
+| dhcp | `op`, `xid`, `ciaddr`, `yiaddr`, `chaddr`（48bit） |
+| dhcpv6 | `msg_type`, `transaction_id`（24bit） |
+| dns | `id`, `flags`, `qdcount`, `ancount` |
+| bfd | `my_discriminator`, `your_discriminator`, `detect_mult`, `desired_min_tx` |
+| nvme_rdma | `opcode`, `command_id`, `nsid`, `prp1`（64bit） |
+
+> **L2 控制 / 管理 / NVMe-RDMA 协议**（lldp/lacp/stp/mac_control/dhcp/dhcpv6/dns/bfd/nvme_rdma/igmp）为**固定头最小实现**（mandatory 字段，无 TLV/option 扩展），用于报文构建与随机覆盖；模板 `ETH_LLDP`/`ETH_LACP`/`ETH_STP`/`ETH_MAC_CONTROL`/`ETH_IPV4_UDP_DHCP`/`ETH_IPV6_UDP_DHCPV6`/`ETH_IPV4_UDP_DNS`/`ETH_IPV4_UDP_BFD`/`ETH_*_ROCEV2_NVME_RDMA` 均可建。
 
 > **IPv6 地址格式**：`src_addr`/`dst_addr` 经 `packet_utils::parse_ipv6` 解析，支持冒号写法（`2001:db8::1`、`::1`、`::`、`fe80::abcd`）或纯十六进制（`0x2001...`，≤32 hex）。非法格式保持默认值。
 >

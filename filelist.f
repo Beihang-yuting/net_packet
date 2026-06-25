@@ -21,6 +21,10 @@ src/protocols/protocol_base.sv
 src/protocols/l2/eth_header.sv
 src/protocols/l2/vlan_header.sv
 src/protocols/l2/mpls_header.sv
+src/protocols/l2/lldp_header.sv
+src/protocols/l2/lacp_header.sv
+src/protocols/l2/stp_header.sv
+src/protocols/l2/mac_control_header.sv
 src/protocols/l3/ipv4_header.sv
 src/protocols/l3/ipv6_header.sv
 src/protocols/l3/arp_header.sv
@@ -31,6 +35,10 @@ src/protocols/l4/icmp_header.sv
 src/protocols/l4/igmp_header.sv
 src/protocols/l4/icmpv6_header.sv
 src/protocols/l4/sctp_header.sv
+src/protocols/l4/dhcp_header.sv
+src/protocols/l4/dhcpv6_header.sv
+src/protocols/l4/dns_header.sv
+src/protocols/l4/bfd_header.sv
 src/protocols/tunnel/vxlan_header.sv
 src/protocols/tunnel/gre_header.sv
 src/protocols/tunnel/geneve_header.sv
@@ -41,6 +49,7 @@ src/protocols/tunnel/vxlan_gpe_header.sv
 src/protocols/tunnel/esp_header.sv
 src/protocols/rdma/rocev2_header.sv
 src/protocols/rdma/iwarp_header.sv
+src/protocols/rdma/nvme_rdma_header.sv
 src/protocols/storage/nvme_tcp_header.sv
 src/protocols/storage/iscsi_header.sv
 src/protocols/app/ptp_header.sv

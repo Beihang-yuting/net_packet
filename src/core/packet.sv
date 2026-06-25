@@ -14,6 +14,15 @@
 `include "l4/udp_header.sv"
 `include "l4/icmp_header.sv"
 `include "l4/igmp_header.sv"
+`include "l2/lldp_header.sv"
+`include "l2/lacp_header.sv"
+`include "l2/stp_header.sv"
+`include "l2/mac_control_header.sv"
+`include "l4/dhcp_header.sv"
+`include "l4/dhcpv6_header.sv"
+`include "l4/dns_header.sv"
+`include "l4/bfd_header.sv"
+`include "rdma/nvme_rdma_header.sv"
 `include "l4/icmpv6_header.sv"
 `include "tunnel/vxlan_header.sv"
 `include "tunnel/gre_header.sv"
@@ -73,6 +82,15 @@ class packet;
     rand udp_header        outer_udp, inner_udp;
     rand icmp_header       icmp;
     rand igmp_header       igmp;
+    rand lldp_header       lldp;
+    rand lacp_header       lacp;
+    rand stp_header        stp;
+    rand mac_control_header mac_control;
+    rand dhcp_header       dhcp;
+    rand dhcpv6_header     dhcpv6;
+    rand dns_header        dns;
+    rand bfd_header        bfd;
+    rand nvme_rdma_header  nvme_rdma;
     rand icmpv6_header     icmpv6;
     rand sctp_header       sctp;
     // Tunnel
@@ -109,11 +127,7 @@ class packet;
         soft pkt_rand_kind == PKT_CAT_ALL;
 
         if (pkt_rand_kind == PKT_CAT_ALL) {
-            // 排除协议头未实现的模板 (post_randomize 无对应 case, 否则 $warning)
-            // DHCP/DHCPV6/DNS/BFD/NVME_RDMA/PTP_L2/LLDP/LACP/STP/MAC_CONTROL 暂无 header 类
-            !(pkt_kind inside {ETH_IPV4_UDP_ROCEV2_NVME_RDMA, ETH_IPV6_UDP_ROCEV2_NVME_RDMA,
-                               ETH_IPV4_UDP_DHCP, ETH_IPV6_UDP_DHCPV6, ETH_IPV4_UDP_DNS, ETH_IPV4_UDP_BFD,
-                               ETH_PTP_L2, ETH_LLDP, ETH_LACP, ETH_STP, ETH_MAC_CONTROL});
+            // 所有模板的协议头均已实现, 无需排除 — 任意 pkt_kind 均可建
         }
 
         if (pkt_rand_kind == PKT_CAT_BASIC) {
@@ -484,6 +498,15 @@ class packet;
         tcp          = new();
         icmp         = new();
         igmp         = new();
+        lldp         = new();
+        lacp         = new();
+        stp          = new();
+        mac_control  = new();
+        dhcp         = new();
+        dhcpv6       = new();
+        dns          = new();
+        bfd          = new();
+        nvme_rdma    = new();
         icmpv6       = new();
         sctp         = new();
         vxlan        = new();
@@ -931,6 +954,15 @@ class packet;
                 PROTO_TCP:         layer_stack.push_back(tcp);
                 PROTO_ICMP:        layer_stack.push_back(icmp);
                 PROTO_IGMP:        layer_stack.push_back(igmp);
+                PROTO_LLDP:        layer_stack.push_back(lldp);
+                PROTO_LACP:        layer_stack.push_back(lacp);
+                PROTO_STP:         layer_stack.push_back(stp);
+                PROTO_MAC_CONTROL: layer_stack.push_back(mac_control);
+                PROTO_DHCP:        layer_stack.push_back(dhcp);
+                PROTO_DHCPV6:      layer_stack.push_back(dhcpv6);
+                PROTO_DNS:         layer_stack.push_back(dns);
+                PROTO_BFD:         layer_stack.push_back(bfd);
+                PROTO_NVME_RDMA:   layer_stack.push_back(nvme_rdma);
                 PROTO_ICMPV6:      layer_stack.push_back(icmpv6);
                 PROTO_SCTP:        layer_stack.push_back(sctp);
                 PROTO_VXLAN:       layer_stack.push_back(vxlan);
@@ -1003,6 +1035,42 @@ class packet;
             end
             PROTO_IGMP: begin
                 igmp_header h = new();
+                return h;
+            end
+            PROTO_LLDP: begin
+                lldp_header h = new();
+                return h;
+            end
+            PROTO_LACP: begin
+                lacp_header h = new();
+                return h;
+            end
+            PROTO_STP: begin
+                stp_header h = new();
+                return h;
+            end
+            PROTO_MAC_CONTROL: begin
+                mac_control_header h = new();
+                return h;
+            end
+            PROTO_DHCP: begin
+                dhcp_header h = new();
+                return h;
+            end
+            PROTO_DHCPV6: begin
+                dhcpv6_header h = new();
+                return h;
+            end
+            PROTO_DNS: begin
+                dns_header h = new();
+                return h;
+            end
+            PROTO_BFD: begin
+                bfd_header h = new();
+                return h;
+            end
+            PROTO_NVME_RDMA: begin
+                nvme_rdma_header h = new();
                 return h;
             end
             PROTO_ICMPV6: begin
@@ -1947,6 +2015,15 @@ class packet;
                 PROTO_UDP:      proto_name = "udp";
                 PROTO_ICMP:     proto_name = "icmp";
                 PROTO_IGMP:     proto_name = "igmp";
+                PROTO_LLDP:        proto_name = "lldp";
+                PROTO_LACP:        proto_name = "lacp";
+                PROTO_STP:         proto_name = "stp";
+                PROTO_MAC_CONTROL: proto_name = "mac_control";
+                PROTO_DHCP:        proto_name = "dhcp";
+                PROTO_DHCPV6:      proto_name = "dhcpv6";
+                PROTO_DNS:         proto_name = "dns";
+                PROTO_BFD:         proto_name = "bfd";
+                PROTO_NVME_RDMA:   proto_name = "nvme_rdma";
                 PROTO_ICMPV6:   proto_name = "icmpv6";
                 PROTO_SCTP:     proto_name = "sctp";
                 PROTO_VXLAN:    proto_name = "vxlan";
@@ -1992,6 +2069,15 @@ class packet;
                     PROTO_UDP:      proto_name = "udp";
                     PROTO_ICMP:     proto_name = "icmp";
                     PROTO_IGMP:     proto_name = "igmp";
+                    PROTO_LLDP:        proto_name = "lldp";
+                    PROTO_LACP:        proto_name = "lacp";
+                    PROTO_STP:         proto_name = "stp";
+                    PROTO_MAC_CONTROL: proto_name = "mac_control";
+                    PROTO_DHCP:        proto_name = "dhcp";
+                    PROTO_DHCPV6:      proto_name = "dhcpv6";
+                    PROTO_DNS:         proto_name = "dns";
+                    PROTO_BFD:         proto_name = "bfd";
+                    PROTO_NVME_RDMA:   proto_name = "nvme_rdma";
                     PROTO_SCTP:     proto_name = "sctp";
                     PROTO_VXLAN:    proto_name = "vxlan";
                     PROTO_GRE:      proto_name = "gre";
