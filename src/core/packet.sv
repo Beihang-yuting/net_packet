@@ -107,13 +107,19 @@ class packet;
         soft pkt_rand_kind == PKT_CAT_ALL;
 
         if (pkt_rand_kind == PKT_CAT_ALL) {
-            // No additional constraint — any pkt_kind is valid
+            // 排除协议头未实现的模板 (post_randomize 无对应 case, 否则 $warning)
+            // IGMP/DHCP/DHCPV6/DNS/BFD/NVME_RDMA/PTP_L2/LLDP/LACP/STP/MAC_CONTROL 暂无 header 类
+            !(pkt_kind inside {ETH_IPV4_IGMP,
+                               ETH_IPV4_UDP_ROCEV2_NVME_RDMA, ETH_IPV6_UDP_ROCEV2_NVME_RDMA,
+                               ETH_IPV4_UDP_DHCP, ETH_IPV6_UDP_DHCPV6, ETH_IPV4_UDP_DNS, ETH_IPV4_UDP_BFD,
+                               ETH_PTP_L2, ETH_LLDP, ETH_LACP, ETH_STP, ETH_MAC_CONTROL});
         }
 
         if (pkt_rand_kind == PKT_CAT_BASIC) {
+            // ETH_IPV4_IGMP 移除: PROTO_IGMP 暂无 header 实现
             pkt_kind inside {ETH_IPV4_TCP, ETH_IPV4_UDP, ETH_IPV4_ICMP, ETH_IPV4_SCTP,
                              ETH_IPV6_TCP, ETH_IPV6_UDP, ETH_IPV6_ICMPV6, ETH_IPV6_SCTP,
-                             ETH_ARP, ETH_IPV4_IGMP};
+                             ETH_ARP};
         }
 
         // --- L4 categories ---
