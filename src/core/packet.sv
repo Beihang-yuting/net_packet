@@ -13,6 +13,7 @@
 `include "l4/tcp_header.sv"
 `include "l4/udp_header.sv"
 `include "l4/icmp_header.sv"
+`include "l4/igmp_header.sv"
 `include "l4/icmpv6_header.sv"
 `include "tunnel/vxlan_header.sv"
 `include "tunnel/gre_header.sv"
@@ -71,6 +72,7 @@ class packet;
     rand tcp_header        tcp;
     rand udp_header        outer_udp, inner_udp;
     rand icmp_header       icmp;
+    rand igmp_header       igmp;
     rand icmpv6_header     icmpv6;
     rand sctp_header       sctp;
     // Tunnel
@@ -108,18 +110,16 @@ class packet;
 
         if (pkt_rand_kind == PKT_CAT_ALL) {
             // 排除协议头未实现的模板 (post_randomize 无对应 case, 否则 $warning)
-            // IGMP/DHCP/DHCPV6/DNS/BFD/NVME_RDMA/PTP_L2/LLDP/LACP/STP/MAC_CONTROL 暂无 header 类
-            !(pkt_kind inside {ETH_IPV4_IGMP,
-                               ETH_IPV4_UDP_ROCEV2_NVME_RDMA, ETH_IPV6_UDP_ROCEV2_NVME_RDMA,
+            // DHCP/DHCPV6/DNS/BFD/NVME_RDMA/PTP_L2/LLDP/LACP/STP/MAC_CONTROL 暂无 header 类
+            !(pkt_kind inside {ETH_IPV4_UDP_ROCEV2_NVME_RDMA, ETH_IPV6_UDP_ROCEV2_NVME_RDMA,
                                ETH_IPV4_UDP_DHCP, ETH_IPV6_UDP_DHCPV6, ETH_IPV4_UDP_DNS, ETH_IPV4_UDP_BFD,
                                ETH_PTP_L2, ETH_LLDP, ETH_LACP, ETH_STP, ETH_MAC_CONTROL});
         }
 
         if (pkt_rand_kind == PKT_CAT_BASIC) {
-            // ETH_IPV4_IGMP 移除: PROTO_IGMP 暂无 header 实现
             pkt_kind inside {ETH_IPV4_TCP, ETH_IPV4_UDP, ETH_IPV4_ICMP, ETH_IPV4_SCTP,
                              ETH_IPV6_TCP, ETH_IPV6_UDP, ETH_IPV6_ICMPV6, ETH_IPV6_SCTP,
-                             ETH_ARP};
+                             ETH_ARP, ETH_IPV4_IGMP};
         }
 
         // --- L4 categories ---
@@ -483,6 +483,7 @@ class packet;
         arp          = new();
         tcp          = new();
         icmp         = new();
+        igmp         = new();
         icmpv6       = new();
         sctp         = new();
         vxlan        = new();
@@ -929,6 +930,7 @@ class packet;
                 PROTO_ARP:         layer_stack.push_back(arp);
                 PROTO_TCP:         layer_stack.push_back(tcp);
                 PROTO_ICMP:        layer_stack.push_back(icmp);
+                PROTO_IGMP:        layer_stack.push_back(igmp);
                 PROTO_ICMPV6:      layer_stack.push_back(icmpv6);
                 PROTO_SCTP:        layer_stack.push_back(sctp);
                 PROTO_VXLAN:       layer_stack.push_back(vxlan);
@@ -997,6 +999,10 @@ class packet;
             end
             PROTO_ICMP: begin
                 icmp_header h = new();
+                return h;
+            end
+            PROTO_IGMP: begin
+                igmp_header h = new();
                 return h;
             end
             PROTO_ICMPV6: begin
@@ -1940,6 +1946,7 @@ class packet;
                 PROTO_TCP:      proto_name = "tcp";
                 PROTO_UDP:      proto_name = "udp";
                 PROTO_ICMP:     proto_name = "icmp";
+                PROTO_IGMP:     proto_name = "igmp";
                 PROTO_ICMPV6:   proto_name = "icmpv6";
                 PROTO_SCTP:     proto_name = "sctp";
                 PROTO_VXLAN:    proto_name = "vxlan";
@@ -1984,6 +1991,7 @@ class packet;
                     PROTO_TCP:      proto_name = "tcp";
                     PROTO_UDP:      proto_name = "udp";
                     PROTO_ICMP:     proto_name = "icmp";
+                    PROTO_IGMP:     proto_name = "igmp";
                     PROTO_SCTP:     proto_name = "sctp";
                     PROTO_VXLAN:    proto_name = "vxlan";
                     PROTO_GRE:      proto_name = "gre";

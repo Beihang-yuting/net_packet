@@ -28,6 +28,7 @@ src/protocols/l3/ipv6_ext_header.sv
 src/protocols/l4/tcp_header.sv
 src/protocols/l4/udp_header.sv
 src/protocols/l4/icmp_header.sv
+src/protocols/l4/igmp_header.sv
 src/protocols/l4/icmpv6_header.sv
 src/protocols/l4/sctp_header.sv
 src/protocols/tunnel/vxlan_header.sv

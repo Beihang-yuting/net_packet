@@ -377,6 +377,7 @@ vxlan_tx count=5
 | udp | `src_port`, `dst_port` |
 | sctp | `src_port`, `dst_port`, `verification_tag` |
 | icmp | `icmp_type`, `code` |
+| igmp | `igmp_type`, `max_resp_time`, `group_address` |
 | icmpv6 | `icmp_type`, `icmp_code`, `identifier`, `sequence_num` |
 | vxlan | `vni` |
 | vxlan_gpe | `flags`, `next_protocol`, `vni` |
@@ -412,6 +413,7 @@ vxlan_tx count=5
 | `ETH_ARP` | Ethernet → ARP |
 | `ETH_IPV4_ICMP` | Ethernet → IPv4 → ICMP |
 | `ETH_IPV6_ICMPV6` | Ethernet → IPv6 → ICMPv6 |
+| `ETH_IPV4_IGMP` | Ethernet → IPv4 → IGMP (v2) |
 
 ### VLAN 报文
 | 模板名 | 协议栈 |
