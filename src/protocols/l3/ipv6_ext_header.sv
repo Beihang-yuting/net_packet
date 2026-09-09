@@ -250,39 +250,43 @@ class ipv6_routing_header extends protocol_base;
         return (hdr_ext_len + 1) * 8;
     endfunction
 
-    virtual function void pack_header(ref byte unsigned data_out[$]);
+    // 参数名与基类 protocol_base::pack_header 保持一致（避免 VCS
+    // SV-ANDNMD 告警触发 strict 门禁）；本类成员同名 data（路由数据
+    // 字节），函数体内一律用 this.data 显式访问成员以消除遮蔽歧义。
+    virtual function void pack_header(ref byte unsigned data[$]);
         int total_len  = get_header_length();
         int data_len   = total_len - 4; // 4 fixed bytes
         int pad_needed;
 
-        data_out.push_back(next_header);
-        data_out.push_back(hdr_ext_len);
-        data_out.push_back(routing_type);
-        data_out.push_back(segments_left);
+        data.push_back(next_header);
+        data.push_back(hdr_ext_len);
+        data.push_back(routing_type);
+        data.push_back(segments_left);
 
-        if (data.size() >= data_len) begin
-            for (int i = 0; i < data_len; i++) data_out.push_back(data[i]);
+        if (this.data.size() >= data_len) begin
+            for (int i = 0; i < data_len; i++) data.push_back(this.data[i]);
         end else begin
-            foreach (data[i]) data_out.push_back(data[i]);
-            pad_needed = data_len - data.size();
-            for (int i = 0; i < pad_needed; i++) data_out.push_back(8'h00);
+            foreach (this.data[i]) data.push_back(this.data[i]);
+            pad_needed = data_len - this.data.size();
+            for (int i = 0; i < pad_needed; i++) data.push_back(8'h00);
         end
     endfunction
 
-    virtual function void unpack_header(ref byte unsigned data_in[$], ref int offset);
+    // 同上：参数名对齐基类 unpack_header；成员写入用 this.data。
+    virtual function void unpack_header(ref byte unsigned data[$], ref int offset);
         int total_len;
         int data_len;
 
-        next_header   = data_in[offset]; offset++;
-        hdr_ext_len   = data_in[offset]; offset++;
-        routing_type  = data_in[offset]; offset++;
-        segments_left = data_in[offset]; offset++;
+        next_header   = data[offset]; offset++;
+        hdr_ext_len   = data[offset]; offset++;
+        routing_type  = data[offset]; offset++;
+        segments_left = data[offset]; offset++;
 
         total_len = get_header_length();
         data_len  = total_len - 4;
-        data      = new[data_len];
+        this.data = new[data_len];
         for (int i = 0; i < data_len; i++) begin
-            data[i] = data_in[offset];
+            this.data[i] = data[offset];
             offset++;
         end
     endfunction
