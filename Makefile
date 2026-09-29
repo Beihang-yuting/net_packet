@@ -1,4 +1,4 @@
-# Makefile
+# Makefile：保留旧版独立源码回归，并提供 package 外部使用验证入口。
 SIM ?= vcs
 TOP_DIR := $(shell pwd)
 SRC_DIR := $(TOP_DIR)/src
@@ -78,3 +78,12 @@ pkt_help: tools/pkt_help.c
 
 clean:
 	rm -rf simv_* csrc *.log *.vpd *.fsdb work transcript *.wlf DVEfiles pkt_help
+
+# 新入口单独编译，避免旧 filelist 将类提前定义到 $unit。
+.PHONY: test_package
+test_package:
+ifeq ($(SIM),vcs)
+	vcs -full64 -sverilog -timescale=1ns/1ps -f filelist_pkg.f test/test_package.sv -top test_package -o simv_package && ./simv_package
+else ifeq ($(SIM),questa)
+	vlog -sv -f filelist_pkg.f test/test_package.sv && vsim -batch -do "run -all; quit" test_package
+endif

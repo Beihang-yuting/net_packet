@@ -1,0 +1,196 @@
+// src/net_packet_pkg.sv：对外统一类型入口，按依赖顺序纳入全部非测试源码。
+// 依赖：filelist_pkg.f 中的 include 路径；定义 UVM 时须先编译 uvm_pkg；
+// 启用 AIP_CMDLINE_SV 时须先编译 aip_core_pkg，显式导入其参数解析类型。
+// 本 package 只声明类型，不创建对象；packet/协议头及文件资源仍由调用方创建和释放。
+// 不可与旧 filelist.f 或 package 外的生产源码 include 混用，避免同名类类型分裂。
+`ifndef NET_PACKET_PKG_SV
+`define NET_PACKET_PKG_SV
+
+// include guard 跨作用域共享：拒绝先在 $unit 展开组件再编译本 package。
+`ifdef PACKET_DEFINES_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif PACKET_UTILS_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif PROTOCOL_BASE_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif ETH_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif VLAN_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif MPLS_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif LLDP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif LACP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif STP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif MAC_CONTROL_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif IPV4_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif IPV6_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif ARP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif IPV6_EXT_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif TCP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif UDP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif ICMP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif IGMP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif ICMPV6_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif SCTP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif DHCP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif DHCPV6_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif DNS_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif BFD_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif VXLAN_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif GRE_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif GENEVE_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif ERSPAN_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif GTP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif IP_IN_IP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif VXLAN_GPE_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif ESP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif ROCEV2_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif IWARP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif NVME_RDMA_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif NVME_TCP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif ISCSI_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif PTP_HEADER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif PROTOCOL_GRAPH_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif TEMPLATE_REGISTRY_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif PACKET_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif IP_FRAGMENT_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif TCP_SEGMENT_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif PROTOCOL_PARSER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif PACKET_COMPARATOR_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif PCAP_WRITER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif PCAP_READER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif PROTOCOL_SEQUENCE_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif TCP_SEQUENCES_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif ARP_SEQUENCE_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif ICMP_SEQUENCE_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif PTP_SEQUENCE_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif FIELD_MODIFIER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif TRAFFIC_STREAM_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif PACKET_ITEM_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif PACKET_SEQUENCE_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`elsif PROTOCOL_SEQ_WRAPPER_SV
+`define NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`endif
+
+`ifdef NET_PACKET_PKG_PREINCLUDE_CONFLICT
+// 有意触发编译错误，避免 guard 静默跳过导致不完整的 package。
+`NET_PACKET_PKG_ERROR__COMPILE_PACKAGE_BEFORE_COMPONENTS
+`else
+package net_packet_pkg;
+    // 旧源码以 AIP_CMDLINE_SV 控制 load_params；package 内必须显式导入类型。
+`ifdef AIP_CMDLINE_SV
+    import aip_core_pkg::*;
+`endif
+
+    `include "common/packet_defines.sv"
+    `include "common/packet_utils.sv"
+    `include "protocols/protocol_base.sv"
+    `include "protocols/l2/eth_header.sv"
+    `include "protocols/l2/vlan_header.sv"
+    `include "protocols/l2/mpls_header.sv"
+    `include "protocols/l2/lldp_header.sv"
+    `include "protocols/l2/lacp_header.sv"
+    `include "protocols/l2/stp_header.sv"
+    `include "protocols/l2/mac_control_header.sv"
+    `include "protocols/l3/ipv4_header.sv"
+    `include "protocols/l3/ipv6_header.sv"
+    `include "protocols/l3/arp_header.sv"
+    `include "protocols/l3/ipv6_ext_header.sv"
+    `include "protocols/l4/tcp_header.sv"
+    `include "protocols/l4/udp_header.sv"
+    `include "protocols/l4/icmp_header.sv"
+    `include "protocols/l4/igmp_header.sv"
+    `include "protocols/l4/icmpv6_header.sv"
+    `include "protocols/l4/sctp_header.sv"
+    `include "protocols/l4/dhcp_header.sv"
+    `include "protocols/l4/dhcpv6_header.sv"
+    `include "protocols/l4/dns_header.sv"
+    `include "protocols/l4/bfd_header.sv"
+    `include "protocols/tunnel/vxlan_header.sv"
+    `include "protocols/tunnel/gre_header.sv"
+    `include "protocols/tunnel/geneve_header.sv"
+    `include "protocols/tunnel/erspan_header.sv"
+    `include "protocols/tunnel/gtp_header.sv"
+    `include "protocols/tunnel/ip_in_ip_header.sv"
+    `include "protocols/tunnel/vxlan_gpe_header.sv"
+    `include "protocols/tunnel/esp_header.sv"
+    `include "protocols/rdma/rocev2_header.sv"
+    `include "protocols/rdma/iwarp_header.sv"
+    `include "protocols/rdma/nvme_rdma_header.sv"
+    `include "protocols/storage/nvme_tcp_header.sv"
+    `include "protocols/storage/iscsi_header.sv"
+    `include "protocols/app/ptp_header.sv"
+    `include "core/protocol_graph.sv"
+    `include "core/template_registry.sv"
+    `include "core/packet.sv"
+    `include "core/ip_fragment.sv"
+    `include "core/tcp_segment.sv"
+    `include "parser/protocol_parser.sv"
+    `include "parser/packet_comparator.sv"
+    `include "pcap/pcap_writer.sv"
+    `include "pcap/pcap_reader.sv"
+    `include "sequence/protocol_sequence.sv"
+    `include "sequence/tcp_sequences.sv"
+    `include "sequence/arp_sequence.sv"
+    `include "sequence/icmp_sequence.sv"
+    `include "sequence/ptp_sequence.sv"
+    `include "stream/field_modifier.sv"
+    `include "stream/traffic_stream.sv"
+    `include "uvm_wrapper/packet_item.sv"
+    `include "uvm_wrapper/packet_sequence.sv"
+    `include "uvm_wrapper/protocol_seq_wrapper.sv"
+
+endpackage : net_packet_pkg
+`endif // NET_PACKET_PKG_PREINCLUDE_CONFLICT
+`endif // NET_PACKET_PKG_SV

@@ -515,3 +515,26 @@ VXLAN    → {Ethernet}
 ## 许可证
 
 MIT License
+
+### Package 集成入口
+
+外部 VIP/package 使用本库类型时，编译 `src/net_packet_pkg.sv`，然后在使用类型的作用域中导入：
+
+```systemverilog
+package my_vip_pkg;
+    import net_packet_pkg::*;
+    class my_env;
+        packet pkt; // 等价于 net_packet_pkg::packet；实例仍需调用方 new()
+    endclass
+endpackage
+```
+
+在 net_packet 仓库根目录执行 `vcs -full64 -sverilog -f filelist_pkg.f your_test.sv`；
+其他工作目录需将 filelist 中源码与 include 路径改为相应仓库路径。
+`filelist_pkg.f` 包含全部生产类、枚举和工具定义，不包含测试；定义 `UVM` 时也包含 UVM wrapper，
+此时须先编译 `uvm_pkg` 并提供 `uvm_macros.svh` 路径。
+若启用原有 `AIP_CMDLINE_SV` 参数加载分支，须先编译 `aip_core_pkg`，本 package 会显式导入其类型。
+
+旧 `filelist.f` 和源码直接 include 方式保留用于兼容现有测试。
+**同一次构建只选择一种入口**；采用 package 后不要再编译旧 filelist 或在 package 外 include 生产源码。
+`make test_package` 验证另一个 package 内构造、序列化报文及跨 package 句柄传递。
